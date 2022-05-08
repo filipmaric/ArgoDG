@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../dist/DG.js"></script>
+    <script src="../dist/RCP.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    
+    <script type="module">
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, -1.2, 1.2, -1.2, 1.2);
+
+      const abs = RCP.absolute().width("3"); 
+      
+      const A = RCP.point(-0.6, -0.2).label("A");
+      const B = RCP.point(0.6, -0.4).label("B");
+      const C = RCP.point(0.2, 0.6).label("C");
+      const elements = RCP.triangle(A, B, C);
+      elements.map(obj => obj.show());
+      
+    </script>
+  </body>
+</html>

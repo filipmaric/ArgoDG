@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../dist/DG.js"></script>
+    <script src="../dist/RC.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    
+    <script>
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 150, 0, 150);
+      const A = RC.point(80, 95).color("blue").label("A");
+      const B = RC.point(20, 40).color("blue").label("B");
+      const C = RC.point(100, 40).color("blue").label("C");
+      const elements = RC.triangle(A, B, C);
+      elements.map(obj => obj.show());
+    </script>
+  </body>
+</html>
