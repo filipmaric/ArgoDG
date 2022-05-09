@@ -144,7 +144,7 @@ function homothety_line() {
     // TODO
 }
 
-// parallel line to line l that contains point A 
+// parallel line to line l that contains point A
 function parallel(l, A) {
     const n = drop_perp(l, A).hide();
     return drop_perp(n, A);
@@ -153,8 +153,8 @@ function parallel(l, A) {
 
 // point Z such that XY : XZ = p : q
 function towards_aux(X, Y, p, q) {
+
     const pp = Math.abs(p), qq = Math.abs(q);
-    
     const M = DG.randomPoint().hide();
     // change M whenever X and Y change
     X.addDependent(M); Y.addDependent(M);
@@ -315,7 +315,7 @@ function triangle(A, B, C) {
     const Ec = midpoint(C, H).color("purple").label("E_{c}"); elements.push(Ec);
     const N = circle3_center(Ma, Mb, Mc).color("purple").label("N"); elements.push(N);
     const Ek = circle(N, Ma).color("purple").label("Ec").dashed(); elements.push(Ek);
-    
+
     const Na = intersectLL(ba, ia).label("N_{a}").color("pink"); elements.push(Na);
     const Nb = intersectLL(bb, ib).label("N_{b}").color("pink"); elements.push(Nb);
     const Nc = intersectLL(bc, ic).label("N_{c}").color("pink"); elements.push(Nc);
@@ -343,17 +343,18 @@ export {
     midpoint,
     reflectP,
     reflectL,
-    
+    homothety_line,
+
     circle_over_segment,
     circle3_center,
     touching_circle,
     tangents,
     other_tangent,
-    
+
     towards,
     angle_bisector,
     angle_divide,
-    
+
     harmonic_conjugate,
 
     triangle
