@@ -1,5 +1,6 @@
 import { View } from './view.js';
 import * as RC from './rc.js';
+import * as DG from './dg.js';
 
 // -----------------------------------------------------------------------------
 // handling of mouse and keyboard events on a view

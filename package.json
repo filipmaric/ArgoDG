@@ -2,7 +2,10 @@
   "name": "ArgoDG",
   "version": "1.0.0",
   "description": "A lightweight JavaScript library for dynamic geometry",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/filipmaric/ArgoDG.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
