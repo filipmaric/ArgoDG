@@ -666,7 +666,7 @@ class DGCircle extends DGCircline {
     // check if this circle is near the given point on the screen
     // (world-to-screen coordinate transform is given)
     isNearCircle(x, y, transform) {
-        return res = this._circline.transform(transform).on_circline(CP1.of_complex(new Complex(x, y)));
+        return this._circline.transform(transform).on_circline(CP1.of_complex(new Complex(x, y)));
     }
     
 
