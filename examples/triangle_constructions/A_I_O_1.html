@@ -1,0 +1,49 @@
+<html>
+  <head>
+    <title>A, I, O</title>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/DG.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, I, O</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    var A = RC.point(80, 95).color("blue").label("A").description("Given point");
+    var I = RC.point(76, 61.15).color("blue").label("I").description("Given point");
+    var O = RC.point(65, 51.14).color("blue").label("O").description("Given point");
+
+    var cc = RC.circle(O, A).color("green").label("cc");
+    var AI = RC.segment(A, I).color("purple");
+    var na = RC.bisector(A, I).color("lime").label("na");
+    var [Nb, Nc] = RC.intersectLC(na, cc);
+    Nb.label("Nb").color("lime");
+    Nc.label("Nc").color("lime");
+
+    var sb = RC.line(I, Nb).color("purple").label("sb").addDescription(" - bisector of angle at B");
+    var Sb = RC.foot(sb, O).color("lime").label("Sb");
+    var OSb = RC.segment(O, Sb).dashed().description("");
+    var B = RC.reflectP(Sb, Nb).color("red").label("B");
+    
+    var sc = RC.line(I, Nc).color("purple").label("sc").addDescription(" - bisector of angle at C");
+    var Sc = RC.foot(sc, O).color("lime").label("Sc");
+    var OSc = RC.segment(O, Sc).dashed().description("");
+    var C = RC.reflectP(Sc, Nc).color("red").label("C");
+
+    var AB = RC.segment(A, B).color("red").width(2);
+    var BC = RC.segment(B, C).color("red").width(2);
+    var AC = RC.segment(A, C).color("red").width(2);
+
+    var Ic = RC.foot(AB, I).hide();
+    var kI = RC.circle(I, Ic).color("purple").description("Inscribed circle");
+
+    var ONc = RC.segment(O, Nc).color("springgreen").dashed();
+    var OC = RC.segment(O, C).color("springgreen").dashed();
+    var ONb = RC.segment(O, Nb).color("springgreen").dashed();
+    var OB = RC.segment(O, B).color("springgreen").dashed();
+
+    DG.animationButtons();
+  </script>
+</body>
+</html>

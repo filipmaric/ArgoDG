@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <title>A, Mb, H</title>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/DG.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, Mb, H</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    const A = RC.point(80, 95).color("blue").label("A").description("Given point");
+    const Mb = RC.point(95, 67.5).color("blue").label("Mb").description("Given point");
+    const H = RC.point(80, 72.73).color("blue").label("H").description("Given point");
+
+    const b = RC.line(A, Mb).color("red").width(0.5).label("b");
+    const C = RC.reflectP(Mb, A).color("red").label("C");
+    const AC = RC.segment(A, C).color("red").width(3);
+    
+    const mb = RC.drop_perp(b, Mb).color("green").label("mb");
+    const MbH = RC.line(Mb, H);
+    const S = RC.reflectP(Mb, H).label("S");
+    const AS = RC.segment(A, S);
+    const m = RC.bisector(A, S).label("m");
+    
+    const O = RC.intersectLL(m, mb).color("green").label("O");
+    const cc = RC.circle(O, A).color("green").width(0.5).dashed().label("cc");
+    
+    const e = RC.line(H, O).color("yellow").label("e").dashed();
+    const G = RC.towards(H, O, H, 3, 2).label("G").color("orange");
+
+    const gb = RC.line(Mb, G).color("orange").label("gb").dashed();
+    const B = RC.towards(Mb, G, Mb, 1, 3).label("B").color("red");
+
+    const AB = RC.segment(A, B).color("red").width(3);
+    const BC = RC.segment(B, C).color("red").width(3);
+    
+    const AH = RC.line(A, H).color("magenta").width(0.8).label("ha").dashed();
+    const BH = RC.line(B, H).color("magenta").width(0.8).label("hb").dashed();
+    const CH = RC.line(C, H).color("magenta").width(0.8).label("hc").dashed();
+
+    DG.animationButtons();
+  </script>
+</body>
+</html>

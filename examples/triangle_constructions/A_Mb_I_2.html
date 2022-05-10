@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <title>A, Mb, I</title>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/DG.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, Mb, I</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    const A = RC.point(80, 95).color("blue").label("A").description("Given point");
+    const Mb = RC.point(95, 67.5).color("blue").label("Mb").description("Given point");
+    const I = RC.point(74.37, 61.15).color("blue").label("I").description("Given point");
+
+    const b = RC.line(A, Mb).color("red").label("b");
+    const C = RC.reflectP(Mb, A).color("red").label("C");
+
+    const Pb = RC.foot(b, I).label("Pb").color("purple");
+    const IPb = RC.segment(I, Pb).color("fuchsia").dashed().description("");
+    const ic = RC.circle(I, Pb).color("purple").dashed().addDescription(" - inscribed circle");
+
+    const sa = RC.line(I, A).color("purple").label("sa");
+    const Pc = RC.reflectL(sa, Pb).color("purple").label("Pc");
+    
+    const sc = RC.line(I, C).color("purple").label("sc");
+    const Pa = RC.reflectL(sc, Pb).color("purple").label("Pa");
+
+    const a = RC.line(A, Pc).color("red").label("a");
+    const c = RC.line(C, Pa).color("red").label("c");
+
+    const B = RC.intersectLL(a, c).color("red").label("B");
+    
+    const AB = RC.segment(A, B).color("red").width(3);
+    const AC = RC.segment(A, C).color("red").width(3);
+    const BC = RC.segment(B, C).color("red").width(3);
+
+    DG.animationButtons();
+  </script>
+</body>
+</html>

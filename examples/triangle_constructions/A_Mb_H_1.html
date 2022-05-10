@@ -1,0 +1,34 @@
+<html>
+  <head>
+    <title>A, Mb, H</title>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/DG.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, Mb, H</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    const A = RC.point(80, 95).color("blue").label("A").description("Given point");
+    const Mb = RC.point(95, 67.5).color("blue").label("Mb").description("Given point");
+    const H = RC.point(80, 72.73).color("blue").label("H").description("Given point");
+
+    const b = RC.line(A, Mb).color("red").width(0.5).label("b");
+    const C = RC.reflectP(Mb, A).color("red").label("C");
+
+    const ha = RC.line(H, A).color("magenta").label("ha");
+    const hc = RC.line(H, C).color("magenta").label("hc");
+
+    const a = RC.drop_perp(ha, C).color("red").width(0.5).label("a");
+    const c = RC.drop_perp(hc, A).color("red").width(0.5).label("c");
+    const B = RC.intersectLL(a, c).color("red").label("B");
+
+    const AB = RC.segment(A, B).color("red").width(3);
+    const AC = RC.segment(A, C).color("red").width(3);
+    const BC = RC.segment(B, C).color("red").width(3);
+
+    DG.animationButtons();
+  </script>
+</body>
+</html>

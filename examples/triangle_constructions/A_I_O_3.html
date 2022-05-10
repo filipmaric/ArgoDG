@@ -1,0 +1,41 @@
+<html>
+  <head>
+    <title>A, I, O</title>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/DG.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, I, O</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    const A = RC.point(80, 95).color("blue").label("A").description("Given point");
+    const I = RC.point(76, 61.15).color("blue").label("I").description("Given point");
+    const O = RC.point(65, 51.14).color("blue").label("O").description("Given point");
+
+    const cc = RC.circle(O, A).color("green").label("cc");
+    const AI = RC.segment(A, I).color("purple");
+    const na = RC.bisector(A, I).color("lime").label("na");
+    const [Nb, Nc] = RC.intersectLC(na, cc);
+    Nb.color("lime").label("Nb");
+    Nc.color("lime").label("Nc");
+    
+    const sb = RC.line(I, Nb).color("purple").label("sb");
+    const B = RC.intersectLC_other(sb, cc, Nb).color("red").label("B");
+    const sc = RC.line(I, Nc).color("purple").label("sc");
+    const C = RC.intersectLC_other(sc, cc, Nc).color("red").label("C");
+        
+    const AC = RC.segment(A, C).color("red").width(2);
+    const AB = RC.segment(A, B).color("red").width(2);
+    const BC = RC.segment(B, C).color("red").width(2);
+
+    const Ic = RC.foot(AB, I).hide();
+    const kI = RC.circle(I, Ic).color("purple").description("Inscribed circle").dashed();
+
+    const cNc = RC.circle(Nc, A).color("lime").dashed();
+    
+    DG.animationButtons();
+  </script>
+</body>
+</html>

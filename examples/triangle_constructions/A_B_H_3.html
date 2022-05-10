@@ -1,0 +1,38 @@
+<html>
+  <head>
+    <title>A, B, H</title>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/DG.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, B, H</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    const A = RC.point(80, 95).color("blue").label("A").description("Given point");
+    const B = RC.point(20, 40).color("blue").label("B").description("Given point");
+    const H = RC.point(80, 72.73).color("blue").label("H").description("Given point");
+    
+    const AB = RC.segment(A, B).color("red").width(2);
+
+    const Mc = RC.midpoint(A, B).color("green").label("Mc");
+    const S = RC.reflectP(Mc, H).label("S");
+    const mc = RC.bisector(A, B).color("green").label("mc");
+    const AS = RC.segment(A, S).dashed();
+    const m = RC.bisector(A, S).label("m");
+
+    const O = RC.intersectLL(mc, m).color("green").label("O");
+    const cc = RC.circle(O, A).dashed().color("green").label("cc");
+    
+    const e = RC.line(H, O).color("yellow").label("e").dashed().addDescription(" - Euler line");
+    const G = RC.towards(H, O, H, 3, 2).label("G").color("orange");
+    const gc = RC.line(Mc, G).color("orange").label("gc").dashed();
+    const C = RC.towards(Mc, G, Mc, 1, 3).label("C").color("red");
+    const AC = RC.segment(A, C).color("red").width(2);
+    const BC = RC.segment(B, C).color("red").width(2);
+    
+    DG.animationButtons();
+  </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <title>A, B, Ta</title>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/DG.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, B, Ta</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    var A = RC.point(40, 95).color("blue").label("A").description("Given point");
+    var B = RC.point(100, 40).color("blue").label("B").description("Given point");
+    var Ta = RC.point(50.86, 40).color("blue").label("Ta").description("Given point");
+    
+    var c = RC.line(A, B).color("red").label("c");
+    var a = RC.line(B, Ta).color("red").label("a");
+
+    var s = RC.line(A, Ta).color("purple").label("s");
+    
+    var T1 = RC.foot(c, Ta).label("T'1");
+    var TaT1 = RC.segment(Ta, T1).dashed().description("");
+
+    var T2 = RC.reflectL(s, T1).label("T'2");
+    var T1T2 = RC.segment(T1, T2).dashed().description("");
+    var TaT2 = RC.segment(Ta, T2).dashed().description("");
+    
+    var b = RC.line(A, T2).color("red").label("b");
+
+    var C = RC.intersectLL(a, b).color("red").label("C");
+    
+    var AB = RC.segment(A, B).color("red").width(3);
+    var AC = RC.segment(A, C).color("red").width(3);
+    var BC = RC.segment(B, C).color("red").width(3);
+
+    DG.animationButtons();
+  </script>
+</body>
+</html>

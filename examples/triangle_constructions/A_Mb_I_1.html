@@ -1,0 +1,49 @@
+<html>
+  <head>
+    <title>A, Mb, I</title>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/DG.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/filipmaric/ArgoDG/dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, Mb, I</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    const A = RC.point(80, 95).color("blue").label("A").description("Given point");
+    const Mb = RC.point(95, 67.5).color("blue").label("Mb").description("Given point");
+    const I = RC.point(74.37, 61.15).color("blue").label("I").description("Given point");
+
+    const b = RC.line(A, Mb).color("red").width(0.5).label("b");
+    const C = RC.reflectP(Mb, A).color("red").label("C");
+
+    const sa = RC.segment(A, I).color("purple").label("sa");
+    const na = RC.bisector(A, I).color("lime").label("na");
+    
+    const sc = RC.line(C, I).color("purple").label("sc");
+    const Nc = RC.intersectLL(na, sc).label("Nc").color("lime");
+
+    const mb = RC.drop_perp(b, Mb).color("green").label("mb");
+    const Nb = RC.intersectLL(na, mb).label("Nb").color("lime");
+
+    const sb = RC.line(Nb, I).color("purple").label("sb");
+
+    const Nc1 = RC.foot(sb, Nc).label("Nc'").color("lime");
+    const nb = RC.segment(Nc, Nc1).color("lime").dashed().description("");
+    const B = RC.reflectP(Nc1, I).label("B").color("red");
+
+    const AB = RC.segment(A, B).color("red").width(2);
+    const AC = RC.segment(A, C).color("red").width(2);
+    const BC = RC.segment(B, C).color("red").width(2);
+
+    const ma = RC.bisector(B, C).color("green").label("ma").hide();
+    const O = RC.intersectLL(ma, mb).label("O").color("green").hide();
+    const cc = RC.circle(O, A).color("green").dashed().description("Circumscribed circle");
+    
+    const Ib = RC.foot(b, I).hide();
+    const ic = RC.circle(I, Ib).color("purple").dashed().description("Inscribed circle");
+
+    DG.animationButtons();
+  </script>
+</body>
+</html>
