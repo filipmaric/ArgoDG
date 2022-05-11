@@ -67,15 +67,25 @@ class DGObject {
         return !this.hidden();
     }
 
-    // set the color of the object
+    // get or set the color of the object
     color(c) {
+        // if c is undefined get the color
+        if (c === undefined)
+            return this._style.color;
+
+        // otherwise set the color
         this._style._color = c;
         DG.draw();
         return this;
     }
 
-    // set the line width of the object
+    // get or set the line width of the object
     width(w) {
+        // w is undefined get the width
+        if (w === undefined)
+            return this._style.width;
+
+        // otherwise set the width
         this._style._width = w;
         DG.draw();
         return this;
@@ -88,14 +98,20 @@ class DGObject {
         return this;
     }
 
+    // set solid line
     solid() {
         this._style._dash = [];
         DG.draw();
         return this;
     }
 
-    // set the size of the object (for drawing points)
+    // get or set the size of the object (for drawing points)
     size(s) {
+        // if s is undefined get the size
+        if (s === undefined)
+            return this._style.size;
+
+        // otherwise set the size
         this._style._size = s;
         DG.draw();
         return this;

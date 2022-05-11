@@ -272,9 +272,9 @@ function harmonic_conjugate(A, B, C) {
 // all significant points of the triangle
 function triangle(A, B, C) {
     const elements = [A, B, C];
-    const a = line(B, C).label("a").width(2); elements.push(a);
-    const b = line(A, C).label("b").width(2); elements.push(b);
-    const c = line(A, B).label("c").width(2); elements.push(c);
+    const a = line(B, C).label("a").color("black").width(2); elements.push(a);
+    const b = line(A, C).label("b").color("black").width(2); elements.push(b);
+    const c = line(A, B).label("c").color("black").width(2); elements.push(c);
     const ha = drop_perp(a, A).color("red").label("h_{a}"); elements.push(ha);
     const hb = drop_perp(b, B).color("red").label("h_{b}"); elements.push(hb);
     const hc = drop_perp(c, C).color("red").label("h_{c}"); elements.push(hc);
