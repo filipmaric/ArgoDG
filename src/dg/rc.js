@@ -272,53 +272,162 @@ function harmonic_conjugate(A, B, C) {
 // all significant points of the triangle
 function triangle(A, B, C) {
     const elements = [A, B, C];
+    // lines
     const a = line(B, C).label("a").color("black").width(2); elements.push(a);
     const b = line(A, C).label("b").color("black").width(2); elements.push(b);
     const c = line(A, B).label("c").color("black").width(2); elements.push(c);
-    const ha = drop_perp(a, A).color("red").label("h_{a}"); elements.push(ha);
-    const hb = drop_perp(b, B).color("red").label("h_{b}"); elements.push(hb);
-    const hc = drop_perp(c, C).color("red").label("h_{c}"); elements.push(hc);
-    const H = intersectLL(ha, hb).color("red").label("H"); elements.push(H);
-    const Ha = intersectLL(ha, a).color("red").label("H_{a}"); elements.push(Ha);
-    const Hb = intersectLL(hb, b).color("red").label("H_{b}"); elements.push(Hb);
-    const Hc = intersectLL(hc, c).color("red").label("H_{c}"); elements.push(Hc);
-    const Ma = midpoint(B, C).color("green").label("M_{a}"); elements.push(Ma);
-    const Mb = midpoint(A, C).color("green").label("M_{b}"); elements.push(Mb);
-    const Mc = midpoint(A, B).color("green").label("M_{c}"); elements.push(Mc);
-    const ka = circle(Ma, B).color("cyan").label("k(M_{a},B)"); elements.push(ka);
-    const kb = circle(Mb, C).color("cyan").label("k(M_{b},C)"); elements.push(kb);
-    const kc = circle(Mc, A).color("cyan").label("k(M_{c},A)"); elements.push(kc);
+
+    // side bisectors
     const ba = bisector(B, C).color("blue").label("b_{a}"); elements.push(ba);
     const bb = bisector(A, C).color("blue").label("b_{b}"); elements.push(bb);
     const bc = bisector(A, B).color("blue").label("b_{c}"); elements.push(bc);
+    
+    // circumcenter
     const O = intersectLL(ba, bb).color("blue").label("O"); elements.push(O);
+    // circumcircle
     const o = circle(O, A).color("blue"); elements.push(o);
+
+    // side midpoints
+    const Ma = midpoint(B, C).color("green").label("M_{a}"); elements.push(Ma);
+    const Mb = midpoint(A, C).color("green").label("M_{b}"); elements.push(Mb);
+    const Mc = midpoint(A, B).color("green").label("M_{c}"); elements.push(Mc);
+
+    // angle bisectors
+    const ta = angle_bisector(B, A, C).color("orange").label("t_{a}"); elements.push(ta);
+    const tb = angle_bisector(A, B, C).color("orange").label("t_{b}"); elements.push(tb);
+    const tc = angle_bisector(B, C, A).color("orange").label("t_{c}"); elements.push(tc);
+    // incenter
+    const I = intersectLL(ta, tb).color("orange").label("I"); elements.push(I);
+
+    // angle bisector feet
+    const Ta = intersectLL(ta, a).color("orange").label("T_{a}"); elements.push(Ta);
+    const Tb = intersectLL(tb, b).color("orange").label("T_{b}"); elements.push(Tb);
+    const Tc = intersectLL(tc, c).color("orange").label("T_{c}"); elements.push(Tc);
+    
+    // incenter perpendicular projections onto triangle sides
+    const tpa = drop_perp(a, I).color("Chocolate").label("t'_{a}"); elements.push(tpa);
+    const tpb = drop_perp(b, I).color("Chocolate").label("t'_{b}"); elements.push(tpb);
+    const tpc = drop_perp(c, I).color("Chocolate").label("t'_{c}"); elements.push(tpc);
+
+    // incenter projection feet
+    const Tpa = intersectLL(tpa, a).color("Chocolate").label("T'_{a}"); elements.push(Tpa);
+    const Tpb = intersectLL(tpb, b).color("Chocolate").label("T'_{b}"); elements.push(Tpb);
+    const Tpc = intersectLL(tpc, c).color("Chocolate").label("T'_{c}"); elements.push(Tpc);
+
+    // incircle
+    const i = circle(I, Tpa).color("orange").label("i"); elements.push(i);
+
+    // altitudes
+    const ha = drop_perp(a, A).color("red").label("h_{a}"); elements.push(ha);
+    const hb = drop_perp(b, B).color("red").label("h_{b}"); elements.push(hb);
+    const hc = drop_perp(c, C).color("red").label("h_{c}"); elements.push(hc);
+
+    // orthocenter
+    const H = intersectLL(ha, hb).color("red").label("H"); elements.push(H);
+
+    // altitude feet
+    const Ha = intersectLL(ha, a).color("red").label("H_{a}"); elements.push(Ha);
+    const Hb = intersectLL(hb, b).color("red").label("H_{b}"); elements.push(Hb);
+    const Hc = intersectLL(hc, c).color("red").label("H_{c}"); elements.push(Hc);
+
+    // circles over triangle sides
+    const ca = circle(Ma, B).color("DimGray"); elements.push(ca);
+    const cb = circle(Mb, A).color("DimGray"); elements.push(cb);
+    const cc = circle(Mc, A).color("DimGray"); elements.push(cc);
+    
+    // medians
     const ma = line(A, Ma).color("green").label("m_{a}"); elements.push(ma);
     const mb = line(B, Mb).color("green").label("m_{b}"); elements.push(mb);
     const mc = line(C, Mc).color("green").label("m_{c}"); elements.push(mc);
+
+    // centroid
     const G = intersectLL(ma, mb).color("green").label("G"); elements.push(G);
-    const ia = angle_bisector(B, A, C).color("orange").label("i_{a}"); elements.push(ia);
-    const ib = angle_bisector(A, B, C).color("orange").label("i_{b}"); elements.push(ib);
-    const ic = angle_bisector(B, C, A).color("orange").label("i_{c}"); elements.push(ic);
-    const I = intersectLL(ia, ib).color("orange").label("I"); elements.push(I);
-    const ta = drop_perp(a, I).color("yellow").label("t_{a}"); elements.push(ta);
-    const tb = drop_perp(b, I).color("yellow").label("t_{b}"); elements.push(tb);
-    const tc = drop_perp(c, I).color("yellow").label("t_{c}"); elements.push(tc);
-    const Ta = intersectLL(ta, a).color("yellow").label("T_{a}"); elements.push(Ta);
-    const Tb = intersectLL(tb, b).color("yellow").label("T_{b}"); elements.push(Tb);
-    const Tc = intersectLL(tc, c).color("yellow").label("T_{c}"); elements.push(Tc);
-    const i = circle(I, Ta).color("orange").label("i"); elements.push(i);
-    
-    const e = line(O, H).color("purple").label("e").dashed(); elements.push(e);
+
+    // midlines
+    const MaMb = line(Ma, Mb).color("DarkTurquoise"); elements.push(MaMb);
+    const MaMc = line(Ma, Mc).color("DarkTurquoise"); elements.push(MaMc);
+    const MbMc = line(Mb, Mc).color("DarkTurquoise"); elements.push(MbMc);
+
+    // Euler line
+    const e = line(O, H).color("purple").label("e"); elements.push(e);
+    // Euler points
     const Ea = midpoint(A, H).color("purple").label("E_{a}"); elements.push(Ea);
     const Eb = midpoint(B, H).color("purple").label("E_{b}"); elements.push(Eb);
     const Ec = midpoint(C, H).color("purple").label("E_{c}"); elements.push(Ec);
-    const N = circle3_center(Ma, Mb, Mc).color("purple").label("N"); elements.push(N);
-    const Ek = circle(N, Ma).color("purple").label("Ec").dashed(); elements.push(Ek);
 
-    const Na = intersectLL(ba, ia).label("N_{a}").color("pink"); elements.push(Na);
-    const Nb = intersectLL(bb, ib).label("N_{b}").color("pink"); elements.push(Nb);
-    const Nc = intersectLL(bc, ic).label("N_{c}").color("pink"); elements.push(Nc);
+    // Euler (nine-point) circle center
+    const N = circle3_center(Ma, Mb, Mc).color("purple").label("N"); elements.push(N);
+    // Euler (nine-point) circle
+    const n = circle(N, Ma).color("purple").label("Ec"); elements.push(n);
+
+    // Euler circles
+    const cEaA = circle(Ea, A).color("magenta"); elements.push(cEaA);
+    const cEbB = circle(Eb, B).color("magenta"); elements.push(cEbB);
+    const cEcC = circle(Ec, C).color("magenta"); elements.push(cEcC);
+
+    // angle bisector and side bisector intersections
+    const Na = intersectLL(ba, ta).label("N_{a}").color("DeepPink"); elements.push(Na);
+    const Nb = intersectLL(bb, tb).label("N_{b}").color("DeepPink"); elements.push(Nb);
+    const Nc = intersectLL(bc, tc).label("N_{c}").color("DeepPink"); elements.push(Nc);
+
+    const cNaI = circle(Na, I).color("DeepPink"); elements.push(cNaI);
+    const cNbI = circle(Nb, I).color("DeepPink"); elements.push(cNbI);
+    const cNcI = circle(Nc, I).color("DeepPink"); elements.push(cNcI);
+
+    // angle bisector feet projections onto other triangle sides
+    const Ta_b = foot(b, Ta).color("Olive").label("T_{ab}"); elements.push(Ta_b);
+    const Ta_c = foot(c, Ta).color("Olive").label("T_{ac}"); elements.push(Ta_c);
+    const cTa = circle(Ta, Ta_b).color("Olive").label("c_{Ta}"); elements.push(cTa);
+
+    const Tb_a = foot(a, Tb).color("Olive").label("T_{ba}"); elements.push(Tb_a);
+    const Tb_c = foot(c, Tb).color("Olive").label("T_{bc}"); elements.push(Tb_c);
+    const cTb = circle(Tb, Tb_a).color("Olive").label("c_{Tb}"); elements.push(cTb);
+
+    const Tc_a = foot(a, Tc).color("Olive").label("T_{ca}"); elements.push(Tc_a);
+    const Tc_b = foot(b, Tc).color("Olive").label("T_{cb}"); elements.push(Tc_b);
+    const cTc = circle(Tc, Tc_a).color("Olive").label("c_{Tc}"); elements.push(cTc);
+
+
+    // out angle bisectors
+    const sa = drop_perp(ta, A).color("tomato").label("s_{a}"); elements.push(sa);
+    const sb = drop_perp(tb, B).color("tomato").label("s_{b}"); elements.push(sb);
+    const sc = drop_perp(tc, C).color("tomato").label("s_{c}"); elements.push(sc);
+
+    // outcircle centers
+    const Ia = intersectLL(sb, sc).color("tomato").label("I_{a}"); elements.push(Ia);
+    const Ib = intersectLL(sa, sc).color("tomato").label("I_{b}"); elements.push(Ib);
+    const Ic = intersectLL(sa, sb).color("tomato").label("I_{c}"); elements.push(Ic);
+
+    // outcenters perpendicular projections onto triangle sides
+    const Spa = foot(a, Ia).color("tomato").label("S'_{a}"); elements.push(Spa);
+    const Spb = foot(b, Ib).color("tomato").label("S'_{b}"); elements.push(Spb);
+    const Spc = foot(c, Ic).color("tomato").label("S'_{b}"); elements.push(Spc);
+
+    // outcircles
+    const ia = circle(Ia, Spa).color("tomato").label("i_{a}"); elements.push(ia);
+    const ib = circle(Ib, Spb).color("tomato").label("i_{b}"); elements.push(ib);
+    const ic = circle(Ic, Spc).color("tomato").label("i_{c}"); elements.push(ic);
+
+    // out angle bisector feet
+    const Sa = intersectLL(sa, a).color("tomato").label("S_{a}"); elements.push(Sa);
+    const Sb = intersectLL(sb, b).color("tomato").label("S_{b}"); elements.push(Sb);
+    const Sc = intersectLL(sc, c).color("tomato").label("S_{c}"); elements.push(Sc);
+
+    // circles over segments formed by inner and outer angle bisector feet
+    const cTaSa = circle_over_segment(Ta, Sa).color("IndianRed"); elements.push(cTaSa);
+    const cTbSb = circle_over_segment(Tb, Sb).color("IndianRed"); elements.push(cTbSb);
+    const cTcSc = circle_over_segment(Tc, Sc).color("IndianRed"); elements.push(cTcSc);
+
+    // some parallel lines :)
+    const IMa = RC.line(I, Ma).color("DarkGray").width(1.5); elements.push(IMa);
+    const ASpa = RC.line(A, Spa).color("DarkGray").width(1.5); elements.push(ASpa);
+
+    const IMb = RC.line(I, Mb).color("DarkGray").width(1.5); elements.push(IMb);
+    const BSpb = RC.line(B, Spb).color("DarkGray").width(1.5); elements.push(BSpb);
+
+    const IMc = RC.line(I, Mc).color("DarkGray").width(1.5); elements.push(IMc);
+    const CSpc = RC.line(C, Spc).color("DarkGray").width(1.5); elements.push(CSpc);
+    
     elements.map(obj => obj.hide());
     return elements;
 }
