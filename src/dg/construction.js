@@ -12,6 +12,7 @@ class Construction {
 
     addView(view) {
         this._views.push(view);
+        view.addConstruction(this);
     }
 
     addObject(o) {
@@ -20,11 +21,19 @@ class Construction {
     }
 
     draw() {
-        this._views.forEach(view => {
-            view.clear();
-            this._objects.filter(o => !o.isPoint()).forEach(o => {o.draw(view)});
-            this._objects.filter(o => o.isPoint()).forEach(o => {o.draw(view)});
-        });
+        if (this.animationInProgress()) {
+            this.drawAnimationStep();
+        } else {
+            this._views.forEach(view => {
+                view.clear();
+                this._objects.filter(o => !o.isPoint()).forEach(o => {o.draw(view)});
+                this._objects.filter(o => o.isPoint()).forEach(o => {o.draw(view)});
+            });
+        }
+    }
+
+    animationInProgress() {
+        return this._animation_step != -1;
     }
 
     drawAnimationStep() {
