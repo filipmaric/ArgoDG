@@ -71,7 +71,7 @@ class DGObject {
     color(c) {
         // if c is undefined get the color
         if (c === undefined)
-            return this._style.color;
+            return this._style._color;
 
         // otherwise set the color
         this._style._color = c;
@@ -83,7 +83,7 @@ class DGObject {
     width(w) {
         // w is undefined get the width
         if (w === undefined)
-            return this._style.width;
+            return this._style._width;
 
         // otherwise set the width
         this._style._width = w;
@@ -109,7 +109,7 @@ class DGObject {
     size(s) {
         // if s is undefined get the size
         if (s === undefined)
-            return this._style.size;
+            return this._style._size;
 
         // otherwise set the size
         this._style._size = s;
@@ -119,16 +119,19 @@ class DGObject {
 
     // get/set the label of the object
     label(str, show, redraw) {
-        if (str) {
-            if (show === undefined)
-                show = true;
-            this._style._label = str;
-            this._style._showing_label = show;
-            if (redraw === undefined || redraw)
-                DG.draw();
-            return this;
-        } else
+        // str is undefined get the label
+        if (str === undefined)
             return this._style._label;
+        
+        // otherwise set the label
+        if (show === undefined)
+            show = true;
+        
+        this._style._label = str;
+        this._style._showing_label = show;
+        if (redraw === undefined || redraw)
+            DG.draw();
+        return this;
     }
 
     showingLabel() {
