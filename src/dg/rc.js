@@ -419,14 +419,14 @@ function triangle(A, B, C) {
     const cTcSc = circle_over_segment(Tc, Sc).color("IndianRed"); elements.push(cTcSc);
 
     // some parallel lines :)
-    const IMa = RC.line(I, Ma).color("DarkGray").width(1.5); elements.push(IMa);
-    const ASpa = RC.line(A, Spa).color("DarkGray").width(1.5); elements.push(ASpa);
+    const IMa = line(I, Ma).color("DarkGray").width(1.5); elements.push(IMa);
+    const ASpa = line(A, Spa).color("DarkGray").width(1.5); elements.push(ASpa);
 
-    const IMb = RC.line(I, Mb).color("DarkGray").width(1.5); elements.push(IMb);
-    const BSpb = RC.line(B, Spb).color("DarkGray").width(1.5); elements.push(BSpb);
+    const IMb = line(I, Mb).color("DarkGray").width(1.5); elements.push(IMb);
+    const BSpb = line(B, Spb).color("DarkGray").width(1.5); elements.push(BSpb);
 
-    const IMc = RC.line(I, Mc).color("DarkGray").width(1.5); elements.push(IMc);
-    const CSpc = RC.line(C, Spc).color("DarkGray").width(1.5); elements.push(CSpc);
+    const IMc = line(I, Mc).color("DarkGray").width(1.5); elements.push(IMc);
+    const CSpc = line(C, Spc).color("DarkGray").width(1.5); elements.push(CSpc);
     
     elements.map(obj => obj.hide());
     return elements;
