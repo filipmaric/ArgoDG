@@ -6,12 +6,12 @@ import { View } from './view.js';
 class Construction {
     constructor() {
         this._objects = [];
-        this._view = null;
+        this._views = [];
         this._animation_step = -1;
     }
 
-    setView(view) {
-        this._view = view;
+    addView(view) {
+        this._views.push(view);
     }
 
     addObject(o) {
@@ -20,21 +20,19 @@ class Construction {
     }
 
     draw() {
-        const view = this._view;
-        if (view) {
+        this._views.forEach(view => {
             view.clear();
             this._objects.filter(o => !o.isPoint()).forEach(o => {o.draw(view)});
             this._objects.filter(o => o.isPoint()).forEach(o => {o.draw(view)});
-        }
+        });
     }
 
     drawAnimationStep() {
-        const view = this._view;
-        if (view) {
+        this._views.forEach(view => {
             view.clear();
             this._objects.slice(0, this._animation_step+1).forEach(o => o.draw(view));
             view.message(this._objects[this._animation_step].description());
-        }
+        });
     }
     
     doAnimationStep(increment) {
@@ -54,15 +52,11 @@ class Construction {
     }
     
     animate() {
-        const view = this._view;
         var self = this;
-        if (view) {
-            view.clear();
-            window.setInterval(function() {
-                self.nextAnimationStep();
-                self.drawAnimationStep();
-            }, 1000);
-        }
+        window.setInterval(function() {
+            self.nextAnimationStep();
+            self.drawAnimationStep();
+        }, 1000);
     }
 
     findFreePointAt(x, y, transform) {

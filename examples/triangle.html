@@ -14,8 +14,61 @@
       const A = RC.point(80, 95).color("blue").label("A");
       const B = RC.point(20, 40).color("blue").label("B");
       const C = RC.point(100, 40).color("blue").label("C");
-      const elements = RC.triangle(A, B, C);
-      elements.map(obj => obj.show());
+
+      // lines
+      const a = RC.line(B, C).label("a").color("black").width(2);
+      const b = RC.line(A, C).label("b").color("black").width(2);
+      const c = RC.line(A, B).label("c").color("black").width(2);
+
+      // side bisectors
+      const ba = RC.bisector(B, C).color("blue").label("b_{a}");
+      const bb = RC.bisector(A, C).color("blue").label("b_{b}");
+      const bc = RC.bisector(A, B).color("blue").label("b_{c}");
+
+      // circumcenter
+      const O = RC.intersectLL(ba, bb).color("blue").label("O");
+      // circumcircle
+      const o = RC.circle(O, A).color("blue");
+      
+      // side midpoints
+      const Ma = RC.midpoint(B, C).color("green").label("M_{a}");
+      const Mb = RC.midpoint(A, C).color("green").label("M_{b}");
+      const Mc = RC.midpoint(A, B).color("green").label("M_{c}");
+      
+      // angle bisectors
+      const ta = RC.angle_bisector(B, A, C).color("orange").label("t_{a}");
+      const tb = RC.angle_bisector(A, B, C).color("orange").label("t_{b}");
+      const tc = RC.angle_bisector(B, C, A).color("orange").label("t_{c}");
+      // incenter
+      const I = RC.intersectLL(ta, tb).color("orange").label("I");
+
+      // incenter projection foot
+      const Tpa = RC.foot(a, I).hide();
+
+      // incircle
+      const i = RC.circle(I, Tpa).color("orange").label("i");
+
+      // altitudes
+      const ha = RC.drop_perp(a, A).color("red").label("h_{a}");
+      const hb = RC.drop_perp(b, B).color("red").label("h_{b}");
+      const hc = RC.drop_perp(c, C).color("red").label("h_{c}");
+      
+      // orthocenter
+      const H = RC.intersectLL(ha, hb).color("red").label("H");
+
+      // altitude feet
+      const Ha = RC.intersectLL(ha, a).color("red").label("H_{a}");
+      const Hb = RC.intersectLL(hb, b).color("red").label("H_{b}");
+      const Hc = RC.intersectLL(hc, c).color("red").label("H_{c}");
+
+      // medians
+      const ma = RC.line(A, Ma).color("green").label("m_{a}");
+      const mb = RC.line(B, Mb).color("green").label("m_{b}");
+      const mc = RC.line(C, Mc).color("green").label("m_{c}");
+      
+      // centroid
+      const G = RC.intersectLL(ma, mb).color("green").label("G");
+      
     </script>
   </body>
 </html>

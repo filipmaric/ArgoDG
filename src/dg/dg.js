@@ -18,7 +18,8 @@ export function setup(element, options, xmin, xmax, ymin, ymax) {
         _view = new View(element, options);
     else
         _view = new View(element, options, xmin, xmax, ymin, ymax);
-    _construction.setView(_view);
+    _construction.addView(_view);
+    _view.addConstruction(_construction);
 }
 
 export function construction() {
