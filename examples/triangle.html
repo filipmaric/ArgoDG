@@ -16,9 +16,14 @@
       const C = RC.point(100, 40).color("blue").label("C");
 
       // lines
-      const a = RC.line(B, C).label("a").color("black").width(2);
-      const b = RC.line(A, C).label("b").color("black").width(2);
-      const c = RC.line(A, B).label("c").color("black").width(2);
+      const a = RC.line(B, C).label("a").color("black").opacity(0.7);
+      const b = RC.line(A, C).label("b").color("black").opacity(0.7);
+      const c = RC.line(A, B).label("c").color("black").opacity(0.7);
+
+      // segments
+      const AB = RC.segment(A, B).color("black").width(2);
+      const BC = RC.segment(B, C).color("black").width(2);
+      const AC = RC.segment(A, C).color("black").width(2);
 
       // side bisectors
       const ba = RC.bisector(B, C).color("blue").label("b_{a}");

@@ -1,5 +1,6 @@
 import { Complex, CP1, Circline } from '../complex_geom.js';
 import * as DG from './dg.js';
+import { rgbColor } from './colors.js';
 
 // -----------------------------------------------------------------------------
 // the base class for all geometric objects
@@ -79,6 +80,13 @@ class DGObject {
         return this;
     }
 
+    // set opacity of the object
+    opacity(o) {
+        const rgb = rgbColor(this.color());
+        this.color("rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + o + ")");
+        return this;
+    }
+    
     // get or set the line width of the object
     width(w) {
         // w is undefined get the width

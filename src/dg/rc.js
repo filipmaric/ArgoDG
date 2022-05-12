@@ -272,7 +272,7 @@ function harmonic_conjugate(A, B, C) {
 // all significant points of the triangle
 function triangle(A, B, C) {
     const elements = [A, B, C];
-    // lines
+    // sides
     const a = line(B, C).label("a").color("black").width(2); elements.push(a);
     const b = line(A, C).label("b").color("black").width(2); elements.push(b);
     const c = line(A, B).label("c").color("black").width(2); elements.push(c);
