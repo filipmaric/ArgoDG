@@ -921,25 +921,36 @@ class DGIf extends DGObject {
     }
     
     color(c) {
+        // if c is undefined get the color
+        if (c === undefined)
+            return this._object.color();
+        
+        // otherwise set the color
         this._thenObject.color(c);
         this._elseObject.color(c);
         return this;
     }
 
     width(w) {
+        // if w is undefined get the width
+        if (w === undefined)
+            return this._object.width();
+
+        // otherwise set the width
         this._thenObject.width(w);
         this._elseObject.width(w);
         return this;
     }
     
     label(l, show_label, redraw) {
-        if (!l)
+        // if l is undefined get the label
+        if (l === undefined)
             return this._object.label();
-        else {
-            this._thenObject.label(l, show_label, redraw);
-            this._elseObject.label(l, show_label, redraw);
-            return this;
-        }
+        
+        // otherwise set the label
+        this._thenObject.label(l, show_label, redraw);
+        this._elseObject.label(l, show_label, redraw);
+        return this;
     }
 
     showingLabel() {
@@ -947,13 +958,14 @@ class DGIf extends DGObject {
     }
 
     description(d) {
-        if (!d)
+        // if d is undefined get the description
+        if (d === undefined)
             return this._object.description();
-        else {
-            this._thenObject.description(d);
-            this._elseObject.description(d);
-            return this;
-        }
+
+        // otherwise set the description
+        this._thenObject.description(d);
+        this._elseObject.description(d);
+        return this;
     }
 
     getStyle() {
