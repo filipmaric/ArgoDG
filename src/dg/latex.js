@@ -1,9 +1,13 @@
+function normalizeBraces(str) {
+    return str ? str.replace(/([\w'()]+)_(\w)/g, '$1_{$2}') : "";
+}
+
 function laTeX2HTML(str) {
-    return str ? str.replace(/([\w'()]+)_{(\w+)}/g, '$1<sub>$2</sub>') : "";
+    return str ? normalizeBraces(str).replace(/([\w'()]+)_{(\w+)}/g, '$1<sub>$2</sub>') : "";
 }
 
 function removeLaTeX(str) {
     return str ? str.replace(/([\w'()]+)_{(\w+)}/g, '$1$2') : "";
 }
 
-export { laTeX2HTML, removeLaTeX };
+export { normalizeBraces, laTeX2HTML, removeLaTeX };
