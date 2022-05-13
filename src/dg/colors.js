@@ -27,3 +27,9 @@ export function rgbColor(str){
     else
         return parseRGB(color);
 }
+
+// extract opacity from color string
+export function opacity(str) {
+    const m = str.match(/^rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+([.]\d*)?)\s*\)$/i);
+    return m ? m[4] : null;
+}

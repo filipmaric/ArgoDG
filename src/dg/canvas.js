@@ -1,4 +1,5 @@
 import { laTeX2HTML } from './latex.js';
+import { opacity } from './colors.js';
 
 // -----------------------------------------------------------------------------
 // encapsulate drawing canvas with a few basic drawing primitives
@@ -110,7 +111,11 @@ class Canvas {
         if (fill) {
             ctx.fillStyle = color;
             ctx.fill();
-            ctx.strokeStyle = "black";
+            const o = opacity(color)
+            if (!o)
+                ctx.strokeStyle = "black";
+            else
+                ctx.strokeStyle = "rgba(0, 0, 0, " + o + ")";
             ctx.stroke();
         } else {
             ctx.strokeStyle = color;
