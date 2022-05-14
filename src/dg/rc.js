@@ -37,7 +37,6 @@ function intersectLC(l, c) {
 // non-deg: l intersects c (in two points)
 function intersectLC_other(l, c, A) {
     const I = DG.intersectLC(l, c).select(p => !p.eq(A.cp1()))
-    I.description("Intersect line " + l.label() + " and circle " + c.label());
     return I;
 }
 

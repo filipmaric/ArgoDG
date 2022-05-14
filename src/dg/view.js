@@ -177,6 +177,18 @@ class View {
             this.pan(this._startPan, this.getMousePosition(e));
             this._startPan = undefined;
         }
+
+        // show description
+        if (e.shiftKey) {
+            const p = this.getMousePosition(e);
+            const objects = this._constructions[0].findObjectsAt(p.X, p.Y, this.transform.bind(this));
+            let msg = "";
+            objects.forEach(obj => {
+                msg += obj.label() + ": " + obj.description() + "<br>";
+            });
+            this.message(msg);
+        }
+            
     }
 
     keydown(e) {

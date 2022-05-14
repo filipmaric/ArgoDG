@@ -7,7 +7,7 @@ function laTeX2HTML(str) {
 }
 
 function removeLaTeX(str) {
-    return str ? str.replace(/([\w'()]+)_{(\w+)}/g, '$1$2') : "";
+    return str ? normalizeBraces(str).replace(/([\w'()]+)_{(\w+)}/g, '$1$2') : "";
 }
 
 export { normalizeBraces, laTeX2HTML, removeLaTeX };

@@ -121,6 +121,10 @@ export function findCircleAt(x, y, transform) {
     return _construction.findCircleAt(x, y, transform);
 }
 
+export function findObjectsAt(x, y, transform) {
+    return _construction.findObjectsAt(x, y, transform);
+}
+
 export function nextAnimationStep() {
     _construction.nextAnimationStep();
 }

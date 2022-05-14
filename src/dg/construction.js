@@ -40,7 +40,19 @@ class Construction {
         this._views.forEach(view => {
             view.clear();
             this._objects.slice(0, this._animation_step+1).forEach(o => o.draw(view));
-            view.message(this._objects[this._animation_step].description());
+            const obj = this._objects[this._animation_step];
+            let msg;
+            if (obj.hasLabel()) {
+                msg = obj.label();
+                if (obj.description())
+                    msg += ": " + obj.description();
+            } else {
+                if (obj.description())
+                    msg = obj.description();
+                else
+                    msg = obj.label();
+            }
+            view.message(msg);
         });
     }
     
@@ -68,6 +80,10 @@ class Construction {
         }, 1000);
     }
 
+    findObjectsAt(x, y, transform) {
+        return this._objects.filter(o => !o.hidden()).filter(p => p.isNear(x, y, transform));
+    }
+
     findFreePointAt(x, y, transform) {
         return this._objects.filter(o => o.isFreePoint() && !o.hidden()).find(p => p.isNear(x, y, transform));
     }
@@ -77,11 +93,11 @@ class Construction {
     }
 
     findLineAt(x, y, transform) {
-        return this._objects.filter(o => o.isLine() && !o.hidden()).find(l => l.isNearLine(x, y, transform));
+        return this._objects.filter(o => o.isLine() && !o.hidden()).find(l => l.isNear(x, y, transform));
     }
 
     findCircleAt(x, y, transform) {
-        return this._objects.filter(o => o.isCircle() && !o.hidden()).find(l => l.isNearCircle(x, y, transform));
+        return this._objects.filter(o => o.isCircle() && !o.hidden()).find(l => l.isNear(x, y, transform));
     }
 
     includes(label) {

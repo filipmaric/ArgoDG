@@ -25,8 +25,10 @@ class DGObject {
         this._style = {};
     }
 
-    // most objects are not free points so this function is predefined
-    // in the base class
+    type() {
+        return "object";
+    }
+
     isFreePoint() {
         return false;
     }
@@ -42,13 +44,20 @@ class DGObject {
     isCircle() {
         return false;
     }
+
+    // fire event that this object has changed
+    fireChangeEvent() {
+        // FIXME: redraw only what is necessarry
+        // redraw all objects (globally)
+        DG.draw();
+    }
     
     // set if this object should be visible
     show(yes) {
         if (yes == undefined)
             yes = true;
         this._style._hide = !yes;
-        DG.draw();
+        this.fireChangeEvent();
         return this;
     }
 
@@ -76,17 +85,11 @@ class DGObject {
 
         // otherwise set the color
         this._style._color = c;
-        DG.draw();
+
+        this.fireChangeEvent();
         return this;
     }
 
-    // set opacity of the object
-    opacity(o) {
-        const rgb = rgbColor(this.color());
-        this.color("rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + o + ")");
-        return this;
-    }
-    
     // get or set the line width of the object
     width(w) {
         // w is undefined get the width
@@ -95,21 +98,33 @@ class DGObject {
 
         // otherwise set the width
         this._style._width = w;
-        DG.draw();
+        
+        this.fireChangeEvent();
         return this;
     }
 
     // set dashed pattern
     dashed() {
         this._style._dash = [8, 4];
-        DG.draw();
+        
+        this.fireChangeEvent();
         return this;
     }
 
     // set solid line
     solid() {
         this._style._dash = [];
-        DG.draw();
+        
+        this.fireChangeEvent();
+        return this;
+    }
+
+    // set opacity of the object
+    opacity(o) {
+        const rgb = rgbColor(this.color());
+        this.color("rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + o + ")");
+        
+        this.fireChangeEvent();
         return this;
     }
 
@@ -121,43 +136,94 @@ class DGObject {
 
         // otherwise set the size
         this._style._size = s;
-        DG.draw();
+
+        this.fireChangeEvent();
         return this;
+    }
+
+    // default label for the object (if label is not set)
+    defaultLabel() {
+        return this.type() + "(" + this._ID + ")";
+    }
+
+    // default description for the object (if description is not set)
+    defaultDescription() {
+        return "";
     }
 
     // get/set the label of the object
     label(str, show, redraw) {
         // str is undefined get the label
-        if (str === undefined)
-            return this._style._label;
+        if (str === undefined) {
+            if (this._style._label)
+                return this._style._label;
+            // label is not set - get the default label
+            return this.defaultLabel();
+        }
         
         // otherwise set the label
-        if (show === undefined)
-            show = true;
-        
         this._style._label = str;
-        this._style._showing_label = show;
+
+        // label should be shown unless showing it explicitly turned off
+        this._style._showing_label = show == undefined || show;
+
+        // change (redraw) event is fired unless that is explicitly turned off
         if (redraw === undefined || redraw)
-            DG.draw();
+            this.fireChangeEvent();
         return this;
     }
 
+    // does this object have a non-generic label
+    hasLabel() {
+        return this._style._label !== undefined;
+    }
+
+    // check if the label should be shown
     showingLabel() {
         return this._style._showing_label;
     }
 
-    getStyle() {
-        return this._style;
+    // get or set the description
+    description(desc) {
+        if (desc != undefined) {
+            // if description is given, set the description
+            this._style._description = desc;
+            
+            this.fireChangeEvent();
+            return this;
+        } else {
+            // otherwise get the description
+            if (this._style._description)
+                return this._style._description;
+            // description is not set - get the default description
+            return this.defaultDescription();
+        }
     }
-    
-    // set the entire style object
-    setStyle(style, redraw) {
-        this._style = style;
-        if (redraw === undefined || redraw)
-            DG.draw();
+
+    // append string to the existing description
+    addDescription(desc) {
+        this._style._description += desc;
+        
+        this.fireChangeEvent();
         return this;
     }
 
+    // get or set the entire style object
+    style(st, redraw) {
+        if (st === undefined)
+            return this._style;
+        
+        this._style = st;
+        
+        // change (redraw) event is fired unless that is explicitly turned off
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
+        return this;
+        
+    }
+
+
+    
     // draw object on the given View
     // this is a template method and the real drawing is done within
     // the polimorphic drawMe method
@@ -183,13 +249,6 @@ class DGObject {
     // is updated whenever the current object changes
     addDependent(o) {
         this._dependent_objects.push(o);
-    }
-
-    // shallow copy allowing different style
-    clone() {
-        const p = new DGClone(this);
-        DG.addObject(p);
-        return p;
     }
 
     // Recaculate the position of all dependent objects when this object changes
@@ -235,28 +294,6 @@ class DGObject {
         }
     }
 
-    description(desc) {
-        if (desc != undefined) {
-            this._style._description = desc;
-            DG.draw();
-            return this;
-        } else {
-            const label = this._style._label || "";
-            const description = this._style._description || "";
-            if (!label)
-                return description;
-            if (!description)
-                return label;
-            return label + ": " + description;
-        }
-    }
-
-    addDescription(desc) {
-        this._style._description += desc;
-        DG.draw();
-        return this;
-    }
-    
     // this should be overridden
     recalcMe() {
     }
@@ -271,6 +308,13 @@ class DGObject {
         }
         return false;
     }
+
+    // shallow copy allowing different style
+    clone() {
+        const p = new DGClone(this);
+        DG.addObject(p);
+        return p;
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -280,23 +324,28 @@ class DGObject {
 class DGClone extends DGObject {
     constructor(object) {
         super();
+        
         this._object = object;
-        this._style = {...this._object.getStyle()};
+        this._style = {...this._object.style()};
         return new Proxy(this, this);
     }
 
+    type() {
+        return "clone";
+    }
+
     drawMe(view) {
-        const old_style = this._object.getStyle();
-        this._object.setStyle(this._style, false);
+        const old_style = this._object.style();
+        this._object.style(this._style, false);
         this._object.drawMe(view);
-        this._object.setStyle(old_style, false);
+        this._object.style(old_style, false);
     }
 
     drawLabel(view) {
-        const old_style = this._object.getStyle();
-        this._object.setStyle(this._style, false);
+        const old_style = this._object.style();
+        this._object.style(this._style, false);
         this._object.drawLabel(view);
-        this._object.setStyle(old_style, false);
+        this._object.style(old_style, false);
     }
 
     isPoint() {
@@ -316,12 +365,16 @@ class DGClone extends DGObject {
 class DGPoint extends DGObject {
     constructor(x, y) {
         super();
-
+        
         this._validity_check = undefined;
         if (arguments.length == 2)
             this._valid = this.moveTo(x, y);
         
         return this;
+    }
+
+    type() {
+        return "point";
     }
 
     // fix the point so that it cannot be moved
@@ -359,7 +412,8 @@ class DGPoint extends DGObject {
             this._coords = new CP1(new Complex(x, y));
             // update all dependent objects
             this.recalc();
-            DG.draw();
+
+            this.fireChangeEvent();
             // the point was successfully moved
             return true;
         }
@@ -444,16 +498,20 @@ class DGPoint extends DGObject {
 // -----------------------------------------------------------------------------
 class DGRandomPoint extends DGPoint {
     constructor(validity_check, xmin, xmax, ymin, ymax) {
+        super();
+        
         xmin = xmin || -1;
         xmax = xmax || 1;
         ymin = ymin || -1;
         ymax = ymax || 1;
-        super();
-        this.label("rnd" + this._ID, false);
         this._xmin = xmin; this._xmax = xmax;
         this._ymin = ymin; this._ymax = ymax;
         this._validity_check = validity_check ? validity_check : (p => true);
         this.recalcMe();
+    }
+
+    type() {
+        return "random point";
     }
     
     // random point is not free
@@ -483,6 +541,10 @@ class DGRandomPoint extends DGPoint {
 class DGCircline extends DGObject {
     constructor() {
         super();
+    }
+
+    type() {
+        return "circline";
     }
 
     drawMe(view) {
@@ -539,6 +601,7 @@ class DGLine extends DGCircline {
     // construct a line given the two points
     constructor(p1, p2) {
         super();
+        
         this._p1 = p1;
         this._p2 = p2;
         // if any of the two points move, this line must be updated
@@ -546,7 +609,14 @@ class DGLine extends DGCircline {
         p2.addDependent(this);
         // initialize the internal circline representation (Hermitean matrix)
         this.recalcMe();
-        this.description("Line " + this._p1.label() + this._p2.label());
+    }
+
+    type() {
+        return "line";
+    }
+
+    defaultDescription() {
+        return "line " + this._p1.label() + this._p2.label();
     }
 
     // recalculate the coordinates
@@ -576,7 +646,7 @@ class DGLine extends DGCircline {
 
     // check if this line is near the given point on the screen
     // (world-to-screen coordinate transform is given)
-    isNearLine(x, y, transform) {
+    isNear(x, y, transform) {
         return this._circline.transform(transform).on_circline(CP1.of_complex(new Complex(x, y)));
     }
 }
@@ -587,7 +657,14 @@ class DGLine extends DGCircline {
 class DGSegment extends DGLine {
     constructor(p1, p2) {
         super(p1, p2);
-        this.description("Segment " + this._p1.label() + this._p2.label());
+    }
+
+    type() {
+        return "segment";
+    }
+
+    defaultDescription() {
+        return "segment " + this._p1.label() + this._p2.label();
     }
 
     drawMe(view) {
@@ -607,8 +684,7 @@ class DGSegment extends DGLine {
 // -----------------------------------------------------------------------------
 class DGPointOnCircline extends DGPoint {
     constructor(l, params) {
-        super()
-        this.label("onCircline" + this._ID, false);
+        super();
         this._line = l;
         this._validity_check = params.validity_check ? params.validity_check : p => true;
         this._disc = params.disc;
@@ -618,6 +694,10 @@ class DGPointOnCircline extends DGPoint {
         this.recalcMe();
         // add the point to the global registry of objects
         DG.addObject(this);
+    }
+
+    type() {
+        return "point on circline";
     }
 
     // recalculate the coordinates
@@ -647,15 +727,22 @@ class DGPointOnCircline extends DGPoint {
 class DGCircle extends DGCircline {
     constructor(c, p) {
         super();
-        this.label("circle" + this._ID, false);
+        
         this._c = c;
         this._p = p;
         // if any of the two points move, this line must be updated
         c.addDependent(this);
         p.addDependent(this);
-        this.description("Circle with center in point " + this._c.label() + " containing point " + this._p.label());
         // initialize the internal circline representation (Hermitean matrix)
         this.recalcMe();
+    }
+
+    type() {
+        return "circle";
+    }
+
+    defaultDescription() {
+        return "circle c(" + this._c.label() + ", " + this._p.label() + ")";
     }
 
     // this is a circle
@@ -692,7 +779,7 @@ class DGCircle extends DGCircline {
 
     // check if this circle is near the given point on the screen
     // (world-to-screen coordinate transform is given)
-    isNearCircle(x, y, transform) {
+    isNear(x, y, transform) {
         return this._circline.transform(transform).on_circline(CP1.of_complex(new Complex(x, y)));
     }
     
@@ -714,6 +801,7 @@ class DGCircle extends DGCircline {
 class DGCircleCenterPoint extends DGPoint {
     constructor(c) {
         super();
+        
         this._circle = c;
         // if the circle moves, this point must be updated
         c.addDependent(this);
@@ -721,6 +809,14 @@ class DGCircleCenterPoint extends DGPoint {
         this.recalcMe();
         // add the center point to the global registry of objects
         DG.addObject(this);
+    }
+
+    type() {
+        return "circle center";
+    }
+
+    defaultDescription() {
+        return "center of " + this._circle.label();
     }
 
     // recalculate the coordinates
@@ -737,17 +833,23 @@ class DGCircleCenterPoint extends DGPoint {
 class DGIntersectLL extends DGPoint {
     constructor(l1, l2) {
         super();
+        
         this._l1 = l1;
         this._l2 = l2;
-        this.label("intersectLL" + this._ID, false);
         // if any of the two line line changes, the intersection must be updated
         l1.addDependent(this);
         l2.addDependent(this);
 
-        this.description("Intersect line " + this._l1.label() + " and line " + this._l2.label());
-        
         // initialize the coordinates of the intersection
         this.recalcMe();
+    }
+
+    type() {
+        return "intersectLL";
+    }
+
+    defaultDescription() {
+        return "intersection of " + this._l1.label() + " and " + this._l2.label();
     }
 
     // although the intersection is a point, it is not a free point
@@ -770,8 +872,12 @@ class DGIntersectLL extends DGPoint {
 class DGIntersections extends DGObject {
     constructor() {
         super();
-        this.label("intersections" + this._ID, false);
+        
         this.hide();
+    }
+
+    type() {
+        return "intersections";
     }
     
     // creates a single intersection point based on the given
@@ -826,14 +932,19 @@ class DGIntersectLC extends DGIntersections {
         super();
         this._l = l;
         this._c = c;
-        this.label("intersectLC" + this._ID, false);
         // if the circle or the line changes, the intersection must be updated
         c.addDependent(this);
         l.addDependent(this);
-        // set description
-        this.description("Interection of line " + this._l.label() + " and circle " + this._c.label());
         // initialize the intersection coordinates
         this.recalcMe();
+    }
+
+    type() {
+        return "intersectLC";
+    }
+
+    defaultDescription() {
+        return "intersection of " + this._l.label() + " and " + this._c.label();
     }
 
     // recalculate the coordinates
@@ -852,12 +963,19 @@ class DGIntersectCC extends DGIntersections {
         super();
         this._c1 = c1;
         this._c2 = c2;
-        this.label("intersectCC" + this._ID, false);
         // if any of the circles changes, the intersection must be updated
         c1.addDependent(this);
         c2.addDependent(this);
         // initialize the intersection coordinates
         this.recalcMe();
+    }
+
+    type() {
+        return "intersectCC";
+    }
+    
+    defaultDescription() {
+        return "intersection of " + this._c1.label() + " and " + this._c2.label();
     }
 
     // recalculate the coordinates
@@ -874,14 +992,18 @@ class DGIntersectCC extends DGIntersections {
 class DGIntersectPoint extends DGPoint {
     constructor(intersections, selectionCriterion, description) {
         super();
-        this.label("intersectPoint" + this._ID, false);
         this._intersections = intersections;
         this._selectionCriterion = selectionCriterion;
         this.description(description);
+        
         // initialize the coordinates
         this.recalcMe();
         // add this object to the global registry
         DG.addObject(this);
+    }
+
+    type() {
+        return "intersection point";
     }
 
     // although this is a single point, it is not free
@@ -917,6 +1039,10 @@ class DGIf extends DGObject {
         elseObject.addDependent(this);
         dependencies.forEach(o => o.addDependent(this));
         this.recalcMe();
+    }
+
+    type() {
+        return "if";
     }
 
     isPoint() {
@@ -968,6 +1094,14 @@ class DGIf extends DGObject {
         return this._object.showingLabel();
     }
 
+    hasLabel() {
+        return this._object.hasLabel();
+    }
+
+    defaultDescription() {
+        return this._object.defaultDescription();
+    }
+
     description(d) {
         // if d is undefined get the description
         if (d === undefined)
@@ -979,13 +1113,12 @@ class DGIf extends DGObject {
         return this;
     }
 
-    getStyle() {
-        return this._object.getStyle();
-    }
-    
-    setStyle(style, redraw) {
-        this._thenObject.setStyle(style, redraw);
-        this._elseObject.setStyle(style, redraw);
+    style(st, redraw) {
+        if (st === undefined)
+            return this._object.style();
+
+        this._thenObject.style(st, redraw);
+        this._elseObject.style(st, redraw);
     }
 
     is_inf() {
@@ -1044,14 +1177,6 @@ class DGIf extends DGObject {
     isNear(x, y, transform) {
         return this._object.isNear(x, y, transform);
     }
-
-    isNearLine(x, y, transform) {
-        return this._object.isNearLine(x, y, transform);
-    }
-
-    isNearCircle(x, y, transform) {
-        return this._object.isNearCircle(x, y, transform);
-    }
     
     drawLabel(view) {
         this._object.drawLabel(view);
@@ -1068,6 +1193,14 @@ class DGPoincareLine extends DGCircline {
         p2.addDependent(this);
         // initialize the internal circline representation (Hermitean matrix)
         this.recalcMe();
+    }
+
+    type() {
+        return "poincare line";
+    }
+
+    defaultDescription() {
+        return "Poincare line " + this._p1.label() + this._p2.label();
     }
 
     recalcMe() {
@@ -1092,6 +1225,14 @@ class DGPoincareCircle extends DGCircline {
         this.recalcMe();
     }
 
+    type() {
+        return "poincare circle";
+    }
+
+    defaultDescription() {
+        return "Poincare circle c(" + this._c.label() + ", " + this._p.label() + ")";
+    }
+    
     recalcMe() {
         const u = this._c.cp1().to_complex();
         const v = this._p.cp1().to_complex();
