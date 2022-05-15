@@ -29,14 +29,14 @@ function intersectLL(l1, l2, redraw) {
 
 // both intersections of line l and circle c
 // non-deg: l intersects c
-function intersectLC(l, c, redraw) {
-    return DG.intersectLC(l, c, false).both(redraw);
+function intersectLC_both(l, c, redraw) {
+    return DG.intersectLC_both(l, c, redraw);
 }
 
 // other intersection of line l and circle c (different from given point A)
 // non-deg: l intersects c (in two points)
 function intersectLC_other(l, c, A, redraw) {
-    const I = DG.intersectLC(l, c, false).select(p => !p.eq(A.cp1()), redraw)
+    const I = DG.intersectLC_select(l, c, p => !p.eq(A.cp1()), redraw)
     return I;
 }
 
@@ -49,15 +49,15 @@ function circle(C, A, redraw) {
 // both intersection of circles c1 and c2
 // non-deg: c1 intersects c2
 // det: c1 != c2
-function intersectCC(c1, c2, redraw) {
-    return DG.intersectCC(c1, c2, false).both(redraw);
+function intersectCC_both(c1, c2, redraw) {
+    return DG.intersectCC_both(c1, c2, redraw);
 }
 
 // other intersection of circles c1 and c2 (different from the given point A)
 // non-deg: c1 intersects c2 (in two different points)
 // det: c1 != c2
 function intersectCC_other(c1, c2, A, redraw) {
-    return DG.intersectCC(c1, c2, false).select(p => !p.eq(A.cp1()), redraw);
+    return DG.intersectCC_select(c1, c2, p => !p.eq(A.cp1()), redraw);
 }
 
 // bisector of segment AB
@@ -65,7 +65,7 @@ function intersectCC_other(c1, c2, A, redraw) {
 function bisector(A, B, redraw) {
     const c1 = circle(A, B, false).hide(false);
     const c2 = circle(B, A, false).hide(false);
-    const [X1, X2] = intersectCC(c1, c2, false).map(p => p.hide(false));
+    const [X1, X2] = intersectCC_both(c1, c2, false).map(p => p.hide(false));
     const m = line(X1, X2, redraw);
     m.description("Bisector of segment " + A.label() + B.label(), false);
     return m;
@@ -77,7 +77,7 @@ function midpoint(A, B, redraw) {
     const m = bisector(A, B, false).hide(false);
     const l = line(A, B, false).hide(false);
     const M = intersectLL(m, l, false).hide(false);
-    const Mp = DG.If((A, B) => A.eq(B), B.clone().hide(false), M, [A, B], redraw);
+    const Mp = DG.If((A, B) => A.eq(B), DG.clone(B, false).hide(false), M, [A, B], redraw);
     Mp.description("Midpoint of segment " + A.label() + B.label());
     return Mp;
 }
@@ -94,9 +94,9 @@ function circle_over_segment(A, B, redraw) {
 
 // line perpendicular to line l containing point A
 function drop_perp(l, A, redraw) {
-    const B = l.randomPoint().hide(false); // FIXME: diffferent from A
+    const B = DG.randomPointOnLine(l, false).hide(false); // FIXME: diffferent from A
     const c = circle(A, B, false).hide(false);
-    const [X1, X2] = intersectLC(l, c, false).map(p => p.hide(false));
+    const [X1, X2] = intersectLC_both(l, c, false).map(p => p.hide(false));
     const m = bisector(X1, X2, redraw);
     m.description("Drop perpendicular from point " + A.label() + " onto line " + l.label(), false);
     return m;
@@ -123,10 +123,12 @@ function touching_circle(A, l, redraw) {
 // both tangents from point A that touch circle c
 // non-deg: A outside c
 function tangents(A, c, redraw) {
-    const O = c.center().hide(false);
+    const O = DG.center(c, false).hide(false);
     const c1 = circle_over_segment(O, A, false).hide(false);
-    const [X1, X2] = intersectCC(c, c1, false).map(p => p.hide(false));
-    return [line(A, X1, false).hide(false), line(A, X2, false).hide(redraw)];
+    const [X1, X2] = intersectCC_both(c, c1, false).map(p => p.hide(false));
+    return [line(A, X1, false), line(A, X2, false)].map(l => l.description(
+        "Tangent from point " + A.label() + " to circle " + c.label(), redraw
+    ));
 }
 
 // tangent from point A that touch circle c, that is different from the given line t
@@ -152,9 +154,8 @@ function parallel(l, A, redraw) {
 
 // point Z such that XY : XZ = p : q
 function towards_aux(X, Y, p, q, redraw) {
-
     const pp = Math.abs(p), qq = Math.abs(q);
-    const M = DG.randomPoint().hide(false);
+    const M = DG.randomPoint(false).hide(false);
     // change M whenever X and Y change
     X.addDependent(M); Y.addDependent(M);
     const l = line(X, M, false).hide(false);
@@ -175,7 +176,7 @@ function towards_aux(X, Y, p, q, redraw) {
     if (p*q < 0)
         Z = reflectP(X, Z, false).hide(false);
 
-    return DG.If((X, Y) => X.eq(Y), X.clone().hide(), Z, [X, Y], redraw);
+    return DG.If((X, Y) => X.eq(Y), DG.clone(X, false).hide(false), Z, [X, Y], redraw);
 }
 
 // point B such that vector AB equals vector XY
@@ -186,9 +187,9 @@ function translate_vec(X, Y, A, redraw) {
     const p2 = parallel(xa, Y, false).hide(false);
     const B = intersectLL(p1, p2, false).hide(false);
     return DG.If((X, Y) => X.eq(Y),
-                 A.clone().hide(false),
+                 DG.clone(A, false).hide(false),
                  DG.If((X, A) => X.eq(A),
-                       Y.clone().hide(false),
+                       DG.clone(Y, false).hide(false),
                        B,
                        [X, A]).hide(false),
                  [X, Y], redraw);
@@ -213,10 +214,10 @@ function angle_bisector(B, A, C, redraw) {
     const k = circle(A, B, false).hide(false);
     const c = line(A, B, false).hide(false);
     const b = line(A, C, false).hide(false);
-    const X = DG.intersectLC(b, k, false).select(p => Circline.same_side(p, C.cp1(), A.cp1()), false).hide(false);
+    const X = DG.intersectLC_select(b, k, p => Circline.same_side(p, C.cp1(), A.cp1()), false).hide(false);
     const k1 = circle(B, X, false).hide(false);
     const k2 = circle(X, B, false).hide(false);
-    const Y = DG.intersectCC(k1, k2, false).any(false).hide(false);
+    const Y = DG.intersectCC_any(k1, k2, false).hide(false);
     const l = line(A, Y, false);
     l.description("Angle " + B.label() + A.label() + C.label() + " bisector", redraw);
     return l;
@@ -227,7 +228,7 @@ function reflectP(O, B, redraw) {
     const l = line(O, B, false).hide(false);
     const c = circle(O, B, false).hide(false);
     const BB = intersectLC_other(l, c, B, false).hide(false);
-    const r = DG.If((O, B) => O.eq(B), B.clone().hide(false), BB, [O, B], false);
+    const r = DG.If((O, B) => O.eq(B), DG.clone(B, false).hide(false), BB, [O, B], false);
     r.description("Reflect point " + B.label() + " over point " + O.label(), redraw);
     return r;
 }
@@ -238,7 +239,7 @@ function reflectL(l, A, redraw) {
     const M = intersectLL(p, l, false).hide(false);
     const c = circle(M, A, false).hide(false);
     const AA = intersectLC_other(p, c, A, false).hide(false);
-    const r = DG.If((A, M) => A.eq(M), A.clone().hide(false), AA, [A, M], false);
+    const r = DG.If((A, M) => A.eq(M), DG.clone(A, false).hide(false), AA, [A, M], false);
     r.description("Reflect point " + A.label() + " over line " + l.label(), redraw);
     return r;
 }
@@ -254,11 +255,11 @@ function circle3_center(A, B, C, redraw) {
 // point D such that H(A, B, C, D)=-1
 // non-deg: collinear A, B, C and C != A and C != B and C is not midpoint of AB
 function harmonic_conjugate(A, B, C, redraw) {
-    const R = DG.randomPoint().hide(false);
+    const R = DG.randomPoint(false).hide(false);
     A.addDependent(R); B.addDependent(R); C.addDependent(R);
     const ra = line(R, A, false).hide(false);
     const rb = line(R, B, false).hide(false);
-    const Q = ra.randomPoint().hide(false);
+    const Q = DG.randomPointOnLine(la, false).hide(false);
     const qc = line(Q, C, false).hide(false);
     const P = intersectLL(rb, qc, false).hide(false);
     const ap = line(A, P, false).hide(false);
@@ -439,9 +440,9 @@ export {
     segment,
     circle,
     intersectLL,
-    intersectLC,
+    intersectLC_both,
     intersectLC_other,
-    intersectCC,
+    intersectCC_both,
     intersectCC_other,
 
     bisector,

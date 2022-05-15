@@ -9,7 +9,7 @@ class DGObject {
     // global number of created objects
     static num_objects = 0;
     
-    constructor() {
+    constructor(construction) {
         // unique object identifier
         this._ID = DGObject.num_objects++;
         
@@ -26,6 +26,10 @@ class DGObject {
 
         // no object is highlighted by default
         this._style._highlight = false;
+
+        // each object is a part of some construction
+        // if no construction is specified, we put it into the global object collection
+        this._construction = construction ? construction : DG.construction();
     }
 
     type() {
@@ -50,9 +54,8 @@ class DGObject {
 
     // fire event that this object has changed
     fireChangeEvent() {
-        // FIXME: redraw only what is necessarry
-        // redraw all objects (globally)
-        DG.draw();
+        // redraw the construction where this object occurs
+        this._construction.draw();
     }
     
     // set if this object should be visible
@@ -359,13 +362,6 @@ class DGObject {
         }
         return false;
     }
-
-    // shallow copy allowing different style
-    clone() {
-        const p = new DGClone(this);
-        DG.addObject(p, false);
-        return p;
-    }
 }
 
 // -----------------------------------------------------------------------------
@@ -650,21 +646,17 @@ class DGCircline extends DGObject {
         }
     }
 
+    // check if this line is near the given point on the screen
+    // (world-to-screen coordinate transform is given)
+    isNear(x, y, transform) {
+        return this._circline.transform(transform).on_circline(CP1.of_complex(new Complex(x, y)));
+    }
+    
     // return internal representation (FIXME: this should be private)
     circline() {
         return this._circline;
     }
 
-    // return a random point on this circline
-    randomPoint(validity_check) {
-        const ret = new DGPointOnCircline(this, {"validity_check": validity_check});
-        return ret;
-    }
-
-    randomPointInDisc(disc, validity_check) {
-        return new DGPointOnCircline(this, {"validity_check": validity_check, "disc": disc})
-    }
-    
     intersect(other) {
         return this.circline().intersect(other.circline());
     }
@@ -720,12 +712,6 @@ class DGLine extends DGCircline {
     circline() {
         return this._circline;
     }
-
-    // check if this line is near the given point on the screen
-    // (world-to-screen coordinate transform is given)
-    isNear(x, y, transform) {
-        return this._circline.transform(transform).on_circline(CP1.of_complex(new Complex(x, y)));
-    }
 }
 
 // -----------------------------------------------------------------------------
@@ -759,7 +745,7 @@ class DGSegment extends DGLine {
 // -----------------------------------------------------------------------------
 // a random point on the line
 // -----------------------------------------------------------------------------
-class DGPointOnCircline extends DGPoint {
+class DGRandomPointOnCircline extends DGPoint {
     constructor(l, params) {
         super();
         this._line = l;
@@ -769,8 +755,6 @@ class DGPointOnCircline extends DGPoint {
         l.addDependent(this);
         // initialize (randomly) the point coordinates
         this.recalcMe();
-        // add the point to the global registry of objects
-        DG.addObject(this, false);
         // fix the point so that it cannot be moved
         this.fix();
     }
@@ -861,13 +845,6 @@ class DGCircle extends DGCircline {
         return this._circline.on_circline(CP1.of_complex(new Complex(x, y)), 1e-3);
     }
 
-    // check if this circle is near the given point on the screen
-    // (world-to-screen coordinate transform is given)
-    isNear(x, y, transform) {
-        return this._circline.transform(transform).on_circline(CP1.of_complex(new Complex(x, y)));
-    }
-    
-
     // intersect a line and a circle
     static intersectLC(l, c) {
         return l.intersect(c);
@@ -891,8 +868,6 @@ class DGCircleCenterPoint extends DGPoint {
         c.addDependent(this);
         // initialize center coordinates
         this.recalcMe();
-        // add the center point to the global registry of objects
-        DG.addObject(this, false);
     }
 
     type() {
@@ -970,8 +945,8 @@ class DGIntersections extends DGObject {
     
     // creates a single intersection point based on the given
     // selection criterion cp1 -> bool
-    intersectionPoint(selectionCriterion, redraw) {
-        const p = new DGIntersectPoint(this, selectionCriterion, this.description(), redraw);
+    intersectionPoint(selectionCriterion) {
+        const p = new DGIntersectPoint(this, selectionCriterion, this.description());
         // if this set of all intersection points changes, then the
         // single selected intersection point must be updated
         this.addDependent(p);
@@ -979,13 +954,13 @@ class DGIntersections extends DGObject {
     }
 
     // return any intersection point
-    any(redraw) {
-        return this.intersectionPoint(p => true, redraw);
+    any() {
+        return this.intersectionPoint(p => true);
     }
 
     // return both intersection points
-    both(redraw) {
-        return [this.intersectionPoint(0, false), this.intersectionPoint(1, redraw)];
+    both() {
+        return [this.intersectionPoint(0), this.intersectionPoint(1)];
     }
 
     // return any point that satisfies the given criterion (the point
@@ -1083,7 +1058,7 @@ class DGIntersectCC extends DGIntersections {
 // by some criteria
 // -----------------------------------------------------------------------------
 class DGIntersectPoint extends DGPoint {
-    constructor(intersections, selectionCriterion, description, redraw) {
+    constructor(intersections, selectionCriterion, description) {
         super();
         this._intersections = intersections;
         this._selectionCriterion = selectionCriterion;
@@ -1091,8 +1066,6 @@ class DGIntersectPoint extends DGPoint {
         
         // initialize the coordinates
         this.recalcMe();
-        // add this object to the global registry
-        DG.addObject(this, redraw);
     }
 
     type() {
@@ -1341,4 +1314,4 @@ class DGPoincareCircle extends DGCircline {
     }
 }
 
-export { DGPoint, DGLine, DGCircle, DGSegment, DGClone, DGRandomPoint, DGCircleCenterPoint, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle };
+export { DGPoint, DGLine, DGCircle, DGSegment, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle };

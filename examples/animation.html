@@ -23,6 +23,11 @@
 
       const Ma = RC.midpoint(B, C).color("green").label("M_a");
       const MaA = RC.circle(Ma, A).color("green").dashed();
+
+      const c1 = RC.circle(Ma, B).color("blue").label("c_1");
+      const [t1, t2] = RC.tangents(A, c1);
+      console.log(t1, t2);
+      
       DG.animationButtons();
     </script>
   </body>

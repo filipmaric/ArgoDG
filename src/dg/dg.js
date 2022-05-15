@@ -1,4 +1,4 @@
-import { DGPoint, DGLine, DGCircle, DGSegment, DGClone, DGRandomPoint, DGCircleCenterPoint, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle } from './objects.js';
+import { DGPoint, DGLine, DGCircle, DGSegment, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle } from './objects.js';
 import { View } from './view.js';
 import { Construction } from './construction.js';
 import { AnimationButtons } from './animation_buttons.js';
@@ -45,11 +45,26 @@ export function point(x, y, validity_check) {
     return p;
 }
 
-export function randomPoint(validity_check, xmin, xmax, ymin, ymax) {
+export function randomPoint(redraw, validity_check, xmin, xmax, ymin, ymax) {
     const p = new DGRandomPoint(validity_check, xmin, xmax, ymin, ymax);
-    addObject(p);
+    addObject(p, redraw);
     return p;
 }
+
+function randomPointOnCircline(cl, redraw, validity_check, disc) {
+    const p = new DGRandomPointOnCircline(cl, {"validity_check": validity_check, "disc": disc});
+    addObject(p, redraw);
+    return p;
+}
+
+export function randomPointOnLine(line, redraw, validity_check, disc) {
+    return randomPointOnCircline(line, redraw, validity_check, disc);
+}
+
+export function randomPointOnCircle(circle, redraw, validity_check, disc) {
+    return randomPointOnCircline(circle, redraw, validity_check, disc);
+}
+
 
 export function line(P1, P2) {
     const l = new DGLine(P1, P2);
@@ -69,22 +84,79 @@ export function intersectLL(l1, l2, redraw) {
     return p;
 }
 
-export function intersectLC(l, c, redraw) {
+function intersectLC(l, c, redraw) {
     const p = new DGIntersectLC(l, c);
     addObject(p, redraw);
     return p;
 }
 
-export function intersectCC(c1, c2, redraw) {
+export function intersectLC_both(l, c, redraw) {
+    const i = intersectLC(l, c, redraw);
+    const [p1, p2] = i.both();
+    addObject(p1, false);
+    addObject(p2, redraw);
+    return [p1, p2];
+}
+
+export function intersectLC_any(l, c, redraw) {
+    const i = intersectLC(l, c, redraw);
+    const p = i.any();
+    addObject(p, redraw);
+    return p;
+}
+
+export function intersectLC_select(l, c, select_fun, redraw) {
+    const i = intersectLC(l, c, redraw);
+    const p = i.select(select_fun);
+    addObject(p, redraw);
+    return p;
+}
+
+function intersectCC(c1, c2, redraw) {
     const p = new DGIntersectCC(c1, c2);
     addObject(p, redraw);
     return p;
+}
+
+export function intersectCC_both(c1, c2, redraw) {
+    const i = intersectCC(c1, c2, redraw);
+    const [p1, p2] = i.both();
+    addObject(p1, false);
+    addObject(p2, redraw);
+    return [p1, p2];
+}
+
+export function intersectCC_any(c1, c2, redraw) {
+    const i = intersectCC(c1, c2, redraw);
+    const p = i.any();
+    addObject(p, redraw);
+    return p;
+}
+
+export function intersectCC_select(c1, c2, select_fun, redraw) {
+    const i = intersectCC(c1, c2, redraw);
+    const p = i.select(select_fun);
+    addObject(p, redraw);
+    return p;
+}
+
+
+export function clone(obj, redraw) {
+    const c = new DGClone(obj);
+    addObject(c, redraw);
+    return c;
 }
 
 export function If(cond, then_object, else_object, dependencies, redraw) {
     const p = new DGIf(cond, then_object, else_object, dependencies);
     addObject(p, redraw);
     return p;
+}
+
+export function center(c, redraw) {
+    const cc = c.center();
+    addObject(cc, redraw);
+    return cc;
 }
 
 export function poincareLine(p1, p2, redraw) {
@@ -104,7 +176,7 @@ export function segment(p1, p2, redraw) {
     addObject(s, redraw);
     return s;
 }
-    
+
 export function findFreePointAt(x, y, transform) {
     return _construction.findFreePointAt(x, y, transform);
 }
