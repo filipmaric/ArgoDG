@@ -3,7 +3,7 @@ const ctx = document.createElement("canvas").getContext("2d");
 // convert color in any format to rgb
 export function rgbColor(str){
     function hexToRGB(hex) {
-        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {
             r: parseInt(result[1], 16),
             g: parseInt(result[2], 16),
@@ -29,7 +29,17 @@ export function rgbColor(str){
 }
 
 // extract opacity from color string
-export function opacity(str) {
-    const m = str.match(/^rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+([.]\d*)?)\s*\)$/i);
-    return m ? m[4] : null;
+export function getOpacity(color) {
+    const defaultOpacity = 1;
+    
+    if (!color)
+        return defaultOpacity;
+    const m = color.match(/^rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+([.]\d*)?)\s*\)$/i);
+    return m ? m[4] : defaultOpacity;
+}
+
+// set opacity to color string
+export function setOpacity(color, o) {
+    const rgb = rgbColor(color);
+    return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + o + ")";
 }

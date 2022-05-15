@@ -15,21 +15,32 @@ class Construction {
         view.addConstruction(this);
     }
 
-    addObject(o) {
+    addObject(o, redraw) {
         this._objects.push(o);
-        this.draw();
+        if (redraw === undefined || redraw)
+            this.draw();
+    }
+
+    drawObjects(objects) {
+        this._views.forEach(view => {
+            view.clear();
+            // draw points at the top
+            objects.filter(o => !o.isPoint()).forEach(o => {o.draw(view)});
+            objects.filter(o => o.isPoint()).forEach(o => {o.draw(view)});
+        });
+    }
+
+    highlight(x, y, transform, highlighter) {
+        this._objects.forEach(obj => {
+            obj.highlight(obj.isNear(x, y, transform) && highlighter.shouldHighlight(obj));
+        });
     }
 
     draw() {
-        if (this.animationInProgress()) {
+        if (this.animationInProgress())
             this.drawAnimationStep();
-        } else {
-            this._views.forEach(view => {
-                view.clear();
-                this._objects.filter(o => !o.isPoint()).forEach(o => {o.draw(view)});
-                this._objects.filter(o => o.isPoint()).forEach(o => {o.draw(view)});
-            });
-        }
+        else
+            this.drawObjects(this._objects);
     }
 
     animationInProgress() {
@@ -37,22 +48,11 @@ class Construction {
     }
 
     drawAnimationStep() {
+        const objects = this._objects.slice(0, this._animation_step+1);
+        this.drawObjects(objects);
+        const obj = this._objects[this._animation_step];
         this._views.forEach(view => {
-            view.clear();
-            this._objects.slice(0, this._animation_step+1).forEach(o => o.draw(view));
-            const obj = this._objects[this._animation_step];
-            let msg;
-            if (obj.hasLabel()) {
-                msg = obj.label();
-                if (obj.description())
-                    msg += ": " + obj.description();
-            } else {
-                if (obj.description())
-                    msg = obj.description();
-                else
-                    msg = obj.label();
-            }
-            view.message(msg);
+            view.message(obj.describe());
         });
     }
     

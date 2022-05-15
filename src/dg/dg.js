@@ -29,8 +29,8 @@ export function view() {
     return _view;
 }
 
-export function addObject(o) {
-    _construction.addObject(o);
+export function addObject(o, redraw) {
+    _construction.addObject(o, redraw);
 }
     
 export function draw() {
@@ -57,51 +57,51 @@ export function line(P1, P2) {
     return l;
 }
 
-export function circle(C, P) {
+export function circle(C, P, redraw) {
     const c = new DGCircle(C, P);
-    addObject(c);
+    addObject(c, redraw);
     return c;
 }
 
-export function intersectLL(l1, l2) {
+export function intersectLL(l1, l2, redraw) {
     const p = new DGIntersectLL(l1, l2);
-    addObject(p);
+    addObject(p, redraw);
     return p;
 }
 
-export function intersectLC(l, c) {
+export function intersectLC(l, c, redraw) {
     const p = new DGIntersectLC(l, c);
-    addObject(p);
+    addObject(p, redraw);
     return p;
 }
 
-export function intersectCC(c1, c2) {
+export function intersectCC(c1, c2, redraw) {
     const p = new DGIntersectCC(c1, c2);
-    addObject(p);
+    addObject(p, redraw);
     return p;
 }
 
-export function If(cond, then_object, else_object, dependencies) {
+export function If(cond, then_object, else_object, dependencies, redraw) {
     const p = new DGIf(cond, then_object, else_object, dependencies);
-    addObject(p);
+    addObject(p, redraw);
     return p;
 }
 
-export function poincareLine(p1, p2) {
+export function poincareLine(p1, p2, redraw) {
     const l = new DGPoincareLine(p1, p2);
-    addObject(l);
+    addObject(l, redraw);
     return l;
 }
 
-export function poincareCircle(c, p) {
+export function poincareCircle(c, p, redraw) {
     const pc = new DGPoincareCircle(c, p);
-    addObject(pc);
+    addObject(pc, redraw);
     return pc;
 }
 
-export function segment(p1, p2) {
+export function segment(p1, p2, redraw) {
     const s = new DGSegment(p1, p2);
-    addObject(s);
+    addObject(s, redraw);
     return s;
 }
     

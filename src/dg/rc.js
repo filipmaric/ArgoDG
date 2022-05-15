@@ -2,82 +2,82 @@ import * as DG from './dg.js';
 import { Circline } from '../complex_geom.js';
 
 // free point
-function point(x, y) {
-    return DG.point(x, y);
+function point(x, y, redraw) {
+    return DG.point(x, y, redraw);
 }
 
 const free = point;
 
 // line AB
 // det: A != B
-function line(A, B) {
-    return DG.line(A, B);
+function line(A, B, redraw) {
+    return DG.line(A, B, redraw);
 }
 
 // segment AB
 // det: A != B
-function segment(A, B) {
-    return DG.segment(A, B);
+function segment(A, B, redraw) {
+    return DG.segment(A, B, redraw);
 }
 
 // intersection of lines l1 and l2
 // non-deg: !parallel(l1, l2)
 // det: l1 != l2
-function intersectLL(l1, l2) {
-    return DG.intersectLL(l1, l2);
+function intersectLL(l1, l2, redraw) {
+    return DG.intersectLL(l1, l2, redraw);
 }
 
 // both intersections of line l and circle c
 // non-deg: l intersects c
-function intersectLC(l, c) {
-    return DG.intersectLC(l, c).both();
+function intersectLC(l, c, redraw) {
+    return DG.intersectLC(l, c, false).both(redraw);
 }
 
 // other intersection of line l and circle c (different from given point A)
 // non-deg: l intersects c (in two points)
-function intersectLC_other(l, c, A) {
-    const I = DG.intersectLC(l, c).select(p => !p.eq(A.cp1()))
+function intersectLC_other(l, c, A, redraw) {
+    const I = DG.intersectLC(l, c, false).select(p => !p.eq(A.cp1()), redraw)
     return I;
 }
 
 // circle centered at C containing A
 // non-deg: C != A
-function circle(C, A) {
-    return DG.circle(C, A);
+function circle(C, A, redraw) {
+    return DG.circle(C, A, redraw);
 }
 
 // both intersection of circles c1 and c2
 // non-deg: c1 intersects c2
 // det: c1 != c2
-function intersectCC(c1, c2) {
-    return DG.intersectCC(c1, c2).both();
+function intersectCC(c1, c2, redraw) {
+    return DG.intersectCC(c1, c2, false).both(redraw);
 }
 
 // other intersection of circles c1 and c2 (different from the given point A)
 // non-deg: c1 intersects c2 (in two different points)
 // det: c1 != c2
-function intersectCC_other(c1, c2, A) {
-    return DG.intersectCC(c1, c2).select(p => !p.eq(A.cp1()));
+function intersectCC_other(c1, c2, A, redraw) {
+    return DG.intersectCC(c1, c2, false).select(p => !p.eq(A.cp1()), redraw);
 }
 
 // bisector of segment AB
 // nondeg: A != B
-function bisector(A, B) {
-    const c1 = circle(A, B).hide();
-    const c2 = circle(B, A).hide();
-    const [X1, X2] = intersectCC(c1, c2).map(p => p.hide());
-    const m = line(X1, X2);
-    m.description("Bisector of segment " + A.label() + B.label());
+function bisector(A, B, redraw) {
+    const c1 = circle(A, B, false).hide(false);
+    const c2 = circle(B, A, false).hide(false);
+    const [X1, X2] = intersectCC(c1, c2, false).map(p => p.hide(false));
+    const m = line(X1, X2, redraw);
+    m.description("Bisector of segment " + A.label() + B.label(), false);
     return m;
 }
 
 
 // midpoint of segment AB
-function midpoint(A, B) {
-    const m = bisector(A, B).hide();
-    const l = line(A, B).hide();
-    const M = intersectLL(m, l).hide();
-    const Mp = DG.If((A, B) => A.eq(B), B.clone().hide(), M, [A, B]);
+function midpoint(A, B, redraw) {
+    const m = bisector(A, B, false).hide(false);
+    const l = line(A, B, false).hide(false);
+    const M = intersectLL(m, l, false).hide(false);
+    const Mp = DG.If((A, B) => A.eq(B), B.clone().hide(false), M, [A, B], redraw);
     Mp.description("Midpoint of segment " + A.label() + B.label());
     return Mp;
 }
@@ -85,57 +85,57 @@ function midpoint(A, B) {
 
 // circle over segment AB
 // non-deg: A != B
-function circle_over_segment(A, B) {
-    const l1 = line(A, B).hide();
-    const l2 = bisector(A, B).hide();
-    const M = intersectLL(l1, l2).hide();
-    return circle(M, A);
+function circle_over_segment(A, B, redraw) {
+    const l1 = line(A, B, false).hide(false);
+    const l2 = bisector(A, B, false).hide(false);
+    const M = intersectLL(l1, l2, false).hide(false);
+    return circle(M, A, redraw);
 }
 
 // line perpendicular to line l containing point A
-function drop_perp(l, A) {
-    const B = l.randomPoint().hide(); // FIXME: diffferent from A
-    const c = circle(A, B).hide();
-    const [X1, X2] = intersectLC(l, c).map(p => p.hide());
-    const m = bisector(X1, X2);
-    m.description("Drop perpendicular from point " + A.label() + " onto line " + l.label());
+function drop_perp(l, A, redraw) {
+    const B = l.randomPoint().hide(false); // FIXME: diffferent from A
+    const c = circle(A, B, false).hide(false);
+    const [X1, X2] = intersectLC(l, c, false).map(p => p.hide(false));
+    const m = bisector(X1, X2, redraw);
+    m.description("Drop perpendicular from point " + A.label() + " onto line " + l.label(), false);
     return m;
 }
 
 // foot of the perpendicular projection of point A onto line l
-function foot(l, A)  {
-    const p = drop_perp(l, A).hide();
-    const X = intersectLL(p, l);
-    X.description("Project point " + A.label() + " onto line " + l.label());
+function foot(l, A, redraw)  {
+    const p = drop_perp(l, A, false).hide(false);
+    const X = intersectLL(p, l, false);
+    X.description("Project point " + A.label() + " onto line " + l.label(), redraw);
     return X;
 }
 
 // circle centered at point A that touches line l
 // non-deg: A not on l
-function touching_circle(A, l) {
-    const p = drop_perp(l, A).hide();
-    const M = intersectLL(p, l).hide();
-    const c = circle(A, M);
-    c.description("Circle centered in " + A.label() + " touching line " + l.label());
+function touching_circle(A, l, redraw) {
+    const p = drop_perp(l, A, false).hide(false);
+    const M = intersectLL(p, l, false).hide(false);
+    const c = circle(A, M, false);
+    c.description("Circle centered in " + A.label() + " touching line " + l.label(), redraw);
     return c;
 }
 
 // both tangents from point A that touch circle c
 // non-deg: A outside c
-function tangents(A, c) {
-    const O = c.center().hide();
-    const c1 = circle_over_segment(O, A).hide();
-    const [X1, X2] = intersectCC(c, c1).map(p => p.hide());
-    return [line(A, X1).hide(), line(A, X2).hide()];
+function tangents(A, c, redraw) {
+    const O = c.center().hide(false);
+    const c1 = circle_over_segment(O, A, false).hide(false);
+    const [X1, X2] = intersectCC(c, c1, false).map(p => p.hide(false));
+    return [line(A, X1, false).hide(false), line(A, X2, false).hide(redraw)];
 }
 
 // tangent from point A that touch circle c, that is different from the given line t
 // non-deg: A outside c
-function other_tangent(A, c, t) {
-    const [t1, t2] = tangents(A, c);
-    const t_ = DG.If((x, y) => x.eq(y), t2, t1, [t, t1]);
-    t_.description("Tangent from point " + A.label() + " to circle " + c.label());
-    return t_.show();
+function other_tangent(A, c, t, redraw) {
+    const [t1, t2] = tangents(A, c, false);
+    const t_ = DG.If((x, y) => x.eq(y), t2, t1, [t, t1], false);
+    t_.description("Tangent from point " + A.label() + " to circle " + c.label(), false);
+    return t_.show(redraw);
 }
 
 // homothety of a line
@@ -144,61 +144,61 @@ function homothety_line() {
 }
 
 // parallel line to line l that contains point A
-function parallel(l, A) {
-    const n = drop_perp(l, A).hide();
-    return drop_perp(n, A);
+function parallel(l, A, redraw) {
+    const n = drop_perp(l, A, false).hide(false);
+    return drop_perp(n, A, redraw);
 }
 
 
 // point Z such that XY : XZ = p : q
-function towards_aux(X, Y, p, q) {
+function towards_aux(X, Y, p, q, redraw) {
 
     const pp = Math.abs(p), qq = Math.abs(q);
-    const M = DG.randomPoint().hide();
+    const M = DG.randomPoint().hide(false);
     // change M whenever X and Y change
     X.addDependent(M); Y.addDependent(M);
-    const l = line(X, M).hide();
+    const l = line(X, M, false).hide(false);
     const points = [X, M];
     for (let i = 0; i < Math.max(pp, qq); i++) {
         const O = points[points.length - 1];
         const A = points[points.length - 2];
-        const c = circle(O, A).hide();
-        const MM = intersectLC_other(l, c, A).hide();
+        const c = circle(O, A, false).hide(false);
+        const MM = intersectLC_other(l, c, A, false).hide(false);
         points.push(MM);
     }
 
-    const p1 = line(Y, points[pp]).hide();
-    const p2 = parallel(p1, points[qq]).hide();
-    const xy = line(X, Y).hide();
-    let Z =  intersectLL(xy, p2).hide();
+    const p1 = line(Y, points[pp], false).hide(false);
+    const p2 = parallel(p1, points[qq], false).hide(false);
+    const xy = line(X, Y, false).hide(false);
+    let Z =  intersectLL(xy, p2, false).hide(false);
 
     if (p*q < 0)
-        Z = reflectP(X, Z).hide();
-    
-    return DG.If((X, Y) => X.eq(Y), X.clone().hide(), Z, [X, Y]);
+        Z = reflectP(X, Z, false).hide(false);
+
+    return DG.If((X, Y) => X.eq(Y), X.clone().hide(), Z, [X, Y], redraw);
 }
 
 // point B such that vector AB equals vector XY
-function translate_vec(X, Y, A) {
-    const xy = line(X, Y).hide();
-    const xa = line(X, A).hide();
-    const p1 = parallel(xy, A).hide();
-    const p2 = parallel(xa, Y).hide();
-    const B = intersectLL(p1, p2).hide();
+function translate_vec(X, Y, A, redraw) {
+    const xy = line(X, Y, false).hide(false);
+    const xa = line(X, A, false).hide(false);
+    const p1 = parallel(xy, A, false).hide(false);
+    const p2 = parallel(xa, Y, false).hide(false);
+    const B = intersectLL(p1, p2, false).hide(false);
     return DG.If((X, Y) => X.eq(Y),
-                 A.clone().hide(),
+                 A.clone().hide(false),
                  DG.If((X, A) => X.eq(A),
-                       Y.clone().hide(),
+                       Y.clone().hide(false),
                        B,
-                       [X, A]).hide(),
-                 [X, Y]);
+                       [X, A]).hide(false),
+                 [X, Y], redraw);
 }
 
 // point W such that XY : ZW = p : q
-function towards(X, Y, Z, p, q) {
-    const YY = towards_aux(X, Y, p, q).hide();
-    const w = translate_vec(X, YY, Z).show();
-    w.description("Point X such that " + X.label() + Y.label() + ":" + Z.label() + "X" + " = " + p + ":" + q);
+function towards(X, Y, Z, p, q, redraw) {
+    const YY = towards_aux(X, Y, p, q, false).hide(false);
+    const w = translate_vec(X, YY, Z, false).show(false);
+    w.description("Point X such that " + X.label() + Y.label() + ":" + Z.label() + "X" + " = " + p + ":" + q, redraw);
     return w;
 }
 
@@ -209,63 +209,64 @@ function angle_divide() {
 }
 
 // a line that bisect the angle BAC
-function angle_bisector(B, A, C) {
-    const k = circle(A, B).hide();
-    const c = line(A, B).hide();
-    const b = line(A, C).hide();
-    const X = DG.intersectLC(b, k).select(p => Circline.same_side(p, C.cp1(), A.cp1())).hide();
-    const k1 = circle(B, X).hide();
-    const k2 = circle(X, B).hide();
-    const Y = DG.intersectCC(k1, k2).any().hide();
-    const l = line(A, Y);
+function angle_bisector(B, A, C, redraw) {
+    const k = circle(A, B, false).hide(false);
+    const c = line(A, B, false).hide(false);
+    const b = line(A, C, false).hide(false);
+    const X = DG.intersectLC(b, k, false).select(p => Circline.same_side(p, C.cp1(), A.cp1()), false).hide(false);
+    const k1 = circle(B, X, false).hide(false);
+    const k2 = circle(X, B, false).hide(false);
+    const Y = DG.intersectCC(k1, k2, false).any(false).hide(false);
+    const l = line(A, Y, false);
+    l.description("Angle " + B.label() + A.label() + C.label() + " bisector", redraw);
     return l;
 }
 
 // reflection of point B around point O
-function reflectP(O, B) {
-    const l = line(O, B).hide();
-    const c = circle(O, B).hide();
-    const BB = intersectLC_other(l, c, B).hide();
-    const r = DG.If((O, B) => O.eq(B), B.clone().hide(), BB, [O, B]);
-    r.description("Reflect point " + B.label() + " over point " + O.label());
+function reflectP(O, B, redraw) {
+    const l = line(O, B, false).hide(false);
+    const c = circle(O, B, false).hide(false);
+    const BB = intersectLC_other(l, c, B, false).hide(false);
+    const r = DG.If((O, B) => O.eq(B), B.clone().hide(false), BB, [O, B], false);
+    r.description("Reflect point " + B.label() + " over point " + O.label(), redraw);
     return r;
 }
 
 // reflection of point A around line l
-function reflectL(l, A) {
-    const p = drop_perp(l, A).hide();
-    const M = intersectLL(p, l).hide();
-    const c = circle(M, A).hide();
-    const AA = intersectLC_other(p, c, A).hide();
-    const r = DG.If((A, M) => A.eq(M), A.clone().hide(), AA, [A, M]);
-    r.description("Reflect point " + A.label() + " over line " + l.label());
+function reflectL(l, A, redraw) {
+    const p = drop_perp(l, A, false).hide(false);
+    const M = intersectLL(p, l, false).hide(false);
+    const c = circle(M, A, false).hide(false);
+    const AA = intersectLC_other(p, c, A, false).hide(false);
+    const r = DG.If((A, M) => A.eq(M), A.clone().hide(false), AA, [A, M], false);
+    r.description("Reflect point " + A.label() + " over line " + l.label(), redraw);
     return r;
 }
 
-// circumcenter of triangle ABC 
-function circle3_center(A, B, C) {
-    const ma = bisector(B, C).hide();
-    const mb = bisector(A, C).hide();
-    const O = intersectLL(ma, mb);
+// circumcenter of triangle ABC
+function circle3_center(A, B, C, redraw) {
+    const ma = bisector(B, C, false).hide(false);
+    const mb = bisector(A, C, false).hide(false);
+    const O = intersectLL(ma, mb, redraw);
     return O;
 }
 
-// point D such that H(A, B, C, D)=-1 
+// point D such that H(A, B, C, D)=-1
 // non-deg: collinear A, B, C and C != A and C != B and C is not midpoint of AB
-function harmonic_conjugate(A, B, C) {
-    const R = DG.randomPoint().hide();
+function harmonic_conjugate(A, B, C, redraw) {
+    const R = DG.randomPoint().hide(false);
     A.addDependent(R); B.addDependent(R); C.addDependent(R);
-    const ra = line(R, A).hide();
-    const rb = line(R, B).hide();
-    const Q = ra.randomPoint().hide();
-    const qc = line(Q, C).hide();
-    const P = intersectLL(rb, qc).hide();
-    const ap = line(A, P).hide();
-    const bq = line(B, Q).hide();
-    const S = intersectLL(ap, bq).hide();
-    const ab = line(A, B).hide();
-    const rs = line(R, S).hide();
-    return intersectLL(ab, rs);
+    const ra = line(R, A, false).hide(false);
+    const rb = line(R, B, false).hide(false);
+    const Q = ra.randomPoint().hide(false);
+    const qc = line(Q, C, false).hide(false);
+    const P = intersectLL(rb, qc, false).hide(false);
+    const ap = line(A, P, false).hide(false);
+    const bq = line(B, Q, false).hide(false);
+    const S = intersectLL(ap, bq, false).hide(false);
+    const ab = line(A, B, false).hide(false);
+    const rs = line(R, S, false).hide(false);
+    return intersectLL(ab, rs, redraw);
 }
 
 // all significant points of the triangle
@@ -280,7 +281,7 @@ function triangle(A, B, C) {
     const ba = bisector(B, C).color("blue").label("b_{a}"); elements.push(ba);
     const bb = bisector(A, C).color("blue").label("b_{b}"); elements.push(bb);
     const bc = bisector(A, B).color("blue").label("b_{c}"); elements.push(bc);
-    
+
     // circumcenter
     const O = intersectLL(ba, bb).color("blue").label("O"); elements.push(O);
     // circumcircle
@@ -302,7 +303,7 @@ function triangle(A, B, C) {
     const Ta = intersectLL(ta, a).color("orange").label("T_{a}"); elements.push(Ta);
     const Tb = intersectLL(tb, b).color("orange").label("T_{b}"); elements.push(Tb);
     const Tc = intersectLL(tc, c).color("orange").label("T_{c}"); elements.push(Tc);
-    
+
     // incenter perpendicular projections onto triangle sides
     const tpa = drop_perp(a, I).color("Chocolate").label("t'_{a}"); elements.push(tpa);
     const tpb = drop_perp(b, I).color("Chocolate").label("t'_{b}"); elements.push(tpb);
@@ -333,7 +334,7 @@ function triangle(A, B, C) {
     const ca = circle(Ma, B).color("DimGray"); elements.push(ca);
     const cb = circle(Mb, A).color("DimGray"); elements.push(cb);
     const cc = circle(Mc, A).color("DimGray"); elements.push(cc);
-    
+
     // medians
     const ma = line(A, Ma).color("green").label("m_{a}"); elements.push(ma);
     const mb = line(B, Mb).color("green").label("m_{b}"); elements.push(mb);
@@ -426,7 +427,7 @@ function triangle(A, B, C) {
 
     const IMc = line(I, Mc).color("DarkGray").width(1.5); elements.push(IMc);
     const CSpc = line(C, Spc).color("DarkGray").width(1.5); elements.push(CSpc);
-    
+
     elements.map(obj => obj.hide());
     return elements;
 }

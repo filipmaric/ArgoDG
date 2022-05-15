@@ -48,7 +48,7 @@
       const I = RC.intersectLL(ta, tb).color("orange").label("I");
 
       // incenter projection foot
-      const Tpa = RC.foot(a, I).hide();
+      const Tpa = RC.foot(a, I).label("T'_{a}").hide();
 
       // incircle
       const i = RC.circle(I, Tpa).color("orange").label("i");
@@ -73,6 +73,7 @@
       
       // centroid
       const G = RC.intersectLL(ma, mb).color("green").label("G");
+      
     </script>
   </body>
 </html>

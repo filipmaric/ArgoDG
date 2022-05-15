@@ -31,9 +31,47 @@ class Tool {
     }
 }
 
+class Highlighter {
+    // this should be overridden
+    shouldHighlight(obj) {
+        return false;
+    }
+}
+
+class HighlighterFreePoints extends Highlighter {
+    shouldHighlight(obj) {
+        return obj.isFreePoint();
+    }
+}
+const highlighterFreePoints = new HighlighterFreePoints();
+
+class HighlighterPoints extends Highlighter  {
+    shouldHighlight(obj) {
+        return obj.isPoint();
+    }
+}
+const highlighterPoints = new HighlighterPoints();
+
+class HighlighterLines extends Highlighter  {
+    shouldHighlight(obj) {
+        return obj.isLine();
+    }
+}
+const highlighterLines = new HighlighterLines();
+
+class HighlighterCircles extends Highlighter  {
+    shouldHighlight(obj) {
+        return obj.isCircle();
+    }
+}
+const highlighterCircles = new HighlighterCircles();
+
 class ToolDragFree extends Tool {
     constructor(view, construction) {
         super(view);
+
+        view.setHighlighter(highlighterFreePoints);
+        
         // mouse button is not yet pressed
         this._mousedown = false;
         // point dragged by the mouse
@@ -120,12 +158,19 @@ class Tool_ConstructObject extends Tool {
         this._callback = callback;
 
         this._view.message("Select a " + this.typeName(this._types[0]));
+        this._view.setHighlighter(this.highlighter(this._types[0]));
     }
 
     typeName(t) {
         if (t == 'p') return "point";
         if (t == 'l') return "line";
         if (t == 'c') return "circle";
+    }
+
+    highlighter(t) {
+        if (t == 'p') return highlighterPoints;
+        if (t == 'l') return highlighterLines;
+        if (t == 'c') return highlighterCircles;
     }
 
     mouseup(e) {
@@ -154,6 +199,7 @@ class Tool_ConstructObject extends Tool {
         this._selected.forEach((obj, i) => {msg += "Selected " + this.typeName(this._types[i]) + " " + obj.label() + ". "});
         msg += "Select a " + this.typeName(this._types[this._selected.length]);
         this._view.message(msg);
+        this._view.setHighlighter(this.highlighter(this._types[this._selected.length]));
     }
     
     getObject() {

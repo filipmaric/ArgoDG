@@ -1,6 +1,6 @@
 import { Complex, CP1, Circline } from '../complex_geom.js';
 import * as DG from './dg.js';
-import { rgbColor } from './colors.js';
+import { rgbColor, getOpacity, setOpacity } from './colors.js';
 
 // -----------------------------------------------------------------------------
 // the base class for all geometric objects
@@ -23,6 +23,9 @@ class DGObject {
 
         // style (visibility, color, width, size, dashed, ...)
         this._style = {};
+
+        // no object is highlighted by default
+        this._style._highlight = false;
     }
 
     type() {
@@ -53,17 +56,18 @@ class DGObject {
     }
     
     // set if this object should be visible
-    show(yes) {
+    show(yes, redraw) {
         if (yes == undefined)
             yes = true;
         this._style._hide = !yes;
-        this.fireChangeEvent();
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
         return this;
     }
 
     // set that this object should not be visible
-    hide() {
-        this.show(false);
+    hide(redraw) {
+        this.show(false, redraw);
         return this;
     }
 
@@ -78,66 +82,84 @@ class DGObject {
     }
 
     // get or set the color of the object
-    color(c) {
+    color(c, redraw) {
         // if c is undefined get the color
         if (c === undefined)
-            return this._style._color;
+            // return color that has been set or black otherwise
+            return this._style._color ? this._style._color : "black";
 
         // otherwise set the color
         this._style._color = c;
 
-        this.fireChangeEvent();
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
         return this;
     }
 
     // get or set the line width of the object
-    width(w) {
+    width(w, redraw) {
         // w is undefined get the width
         if (w === undefined)
-            return this._style._width;
+            // return width that has been set or 1 if it is undefined
+            return this._style._width ? this._style._width : 1;
 
         // otherwise set the width
         this._style._width = w;
         
-        this.fireChangeEvent();
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
         return this;
     }
 
     // set dashed pattern
-    dashed() {
+    dashed(redraw) {
         this._style._dash = [8, 4];
         
-        this.fireChangeEvent();
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
         return this;
     }
 
     // set solid line
-    solid() {
+    solid(redraw) {
         this._style._dash = [];
         
-        this.fireChangeEvent();
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
         return this;
     }
 
-    // set opacity of the object
-    opacity(o) {
-        const rgb = rgbColor(this.color());
-        this.color("rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + o + ")");
+    // get the dash pattern
+    dash() {
+        return this._style._dash ? this._style._dash : [];
+    }
+
+    // get or set opacity of the object
+    opacity(o, redraw) {
+        // o is undefined get the opacity
+        if (o === undefined)
+            return getOpacity(this.color());
         
-        this.fireChangeEvent();
+        // otherwise set the opacity
+        this.color(setOpacity(this.color(), o));
+        
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
         return this;
     }
 
     // get or set the size of the object (for drawing points)
-    size(s) {
+    size(s, redraw) {
         // if s is undefined get the size
         if (s === undefined)
-            return this._style._size;
+            // return size that has been set or 1 if it is undefined
+            return this._style._size ? this._style._size : 1;
 
         // otherwise set the size
         this._style._size = s;
 
-        this.fireChangeEvent();
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
         return this;
     }
 
@@ -184,12 +206,13 @@ class DGObject {
     }
 
     // get or set the description
-    description(desc) {
+    description(desc, redraw) {
         if (desc != undefined) {
             // if description is given, set the description
             this._style._description = desc;
             
-            this.fireChangeEvent();
+            if (redraw === undefined || redraw)
+                this.fireChangeEvent();
             return this;
         } else {
             // otherwise get the description
@@ -201,11 +224,41 @@ class DGObject {
     }
 
     // append string to the existing description
-    addDescription(desc) {
+    addDescription(desc, redraw) {
         this._style._description += desc;
         
-        this.fireChangeEvent();
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
         return this;
+    }
+
+    // returns a nice description for the object that might contain a label (if its given)
+    // and description (given or default)
+    describe() {
+        let result;
+        if (this.hasLabel()) {
+            result = this.label();
+            if (this.description())
+                result += ": " + this.description();
+        } else {
+            if (this.description())
+                result = this.description();
+            else
+                result = this.label();
+        }
+        return result;
+    }
+
+    // get or set highlight (that shows that mouse is on the object) 
+    highlight(h, redraw) {
+        if (h === undefined)
+            return this._style._highlight ? this._style._highlight : false;
+
+        if (h != this._style._highlight) {
+            this._style._highlight = h;
+            if (redraw === undefined || redraw)
+                this.fireChangeEvent();
+        }
     }
 
     // get or set the entire style object
@@ -222,8 +275,6 @@ class DGObject {
         
     }
 
-
-    
     // draw object on the given View
     // this is a template method and the real drawing is done within
     // the polimorphic drawMe method
@@ -312,7 +363,7 @@ class DGObject {
     // shallow copy allowing different style
     clone() {
         const p = new DGClone(this);
-        DG.addObject(p);
+        DG.addObject(p, false);
         return p;
     }
 }
@@ -365,7 +416,7 @@ class DGClone extends DGObject {
 class DGPoint extends DGObject {
     constructor(x, y) {
         super();
-        
+
         this._validity_check = undefined;
         if (arguments.length == 2)
             this._valid = this.moveTo(x, y);
@@ -380,6 +431,12 @@ class DGPoint extends DGObject {
     // fix the point so that it cannot be moved
     fix() {
         this._fixed = true;
+        return this;
+    }
+
+    // free the point so that it can be moved
+    free() {
+        this._fixed = false;
         return this;
     }
 
@@ -474,16 +531,20 @@ class DGPoint extends DGObject {
     isNear(x, y, transform) {
         const [xt, yt] = transform(this.x(), this.y());
         const dist2 = (xt - x)*(xt - x) + (yt - y)*(yt - y);
-        const EPS = 5;
-        if (this._style._size)
-            EPS *= this._style._size;
+        let EPS = 5;
+        EPS *= this.size();
         return dist2 <= EPS * EPS;
     }
 
     // drawing the point on the given View
     drawMe(view) {
-        if (!this.is_inf())
-            view.point(this.x(), this.y(), {color: this._style._color, size: this._style._size});
+        if (!this.is_inf()) {
+            if (this.highlight()) {
+                view.point(this.x(), this.y(), {color: setOpacity(this.color(), 0.5*this.opacity()), size: 1.5*this.size()});
+            }
+            view.point(this.x(), this.y(), {color: this.color(), size: this.size()});
+            
+        }
     }
 
     // drawing the point label on the given View 
@@ -548,19 +609,34 @@ class DGCircline extends DGObject {
     }
 
     drawMe(view) {
-        if (this._circline.is_line()) {
-            const [p1, p2] = this._circline.line_points();
-            const [x1, y1] = [p1.re, p1.im];
-            const [x2, y2] = [p2.re, p2.im];
-            const style = {color: this._style._color,
-                           width: this._style._width,
-                           dash: this._style._dash};
-            view.line(x1, y1, x2, y2, style);
-        } else {
-            const c = this._circline.circle_center();
-            const r = this._circline.circle_radius();
-            const [x, y] = [c.re, c.im];
-            view.circle(x, y, r, {color: this._style._color, width: this._style._width, dash: this._style._dash});
+        function doDraw(cl, style) {
+            if (cl._circline.is_line()) {
+                const [p1, p2] = cl._circline.line_points();
+                const [x1, y1] = [p1.re, p1.im];
+                const [x2, y2] = [p2.re, p2.im];
+                view.line(x1, y1, x2, y2, style);
+            } else {
+                const c = cl._circline.circle_center();
+                const r = cl._circline.circle_radius();
+                const [x, y] = [c.re, c.im];
+                view.circle(x, y, r, style);
+            }
+        }
+        
+        const style = {
+            color: this.color(),
+            width: this.width(),
+            dash: this.dash()
+        };
+        doDraw(this, style);
+        
+        if (this.highlight()) {
+            const style = {
+                color: setOpacity(this.color(), 0.5*getOpacity(this.color())),
+                width: 3*this.width(),
+                dash: this.dash()
+            };
+            doDraw(this, style);
         }
     }
 
@@ -581,7 +657,8 @@ class DGCircline extends DGObject {
 
     // return a random point on this circline
     randomPoint(validity_check) {
-        return new DGPointOnCircline(this, {"validity_check": validity_check});
+        const ret = new DGPointOnCircline(this, {"validity_check": validity_check});
+        return ret;
     }
 
     randomPointInDisc(disc, validity_check) {
@@ -693,11 +770,18 @@ class DGPointOnCircline extends DGPoint {
         // initialize (randomly) the point coordinates
         this.recalcMe();
         // add the point to the global registry of objects
-        DG.addObject(this);
+        DG.addObject(this, false);
+        // fix the point so that it cannot be moved
+        this.fix();
     }
 
     type() {
         return "point on circline";
+    }
+
+    // point on circline is semi-free
+    isFreePoint() {
+        return !this._fixed;
     }
 
     // recalculate the coordinates
@@ -808,11 +892,16 @@ class DGCircleCenterPoint extends DGPoint {
         // initialize center coordinates
         this.recalcMe();
         // add the center point to the global registry of objects
-        DG.addObject(this);
+        DG.addObject(this, false);
     }
 
     type() {
         return "circle center";
+    }
+
+    // circle center point is not free
+    isFreePoint() {
+        return false;
     }
 
     defaultDescription() {
@@ -872,8 +961,7 @@ class DGIntersectLL extends DGPoint {
 class DGIntersections extends DGObject {
     constructor() {
         super();
-        
-        this.hide();
+        this.hide(false);
     }
 
     type() {
@@ -882,8 +970,8 @@ class DGIntersections extends DGObject {
     
     // creates a single intersection point based on the given
     // selection criterion cp1 -> bool
-    intersectionPoint(selectionCriterion) {
-        const p = new DGIntersectPoint(this, selectionCriterion, this.description());
+    intersectionPoint(selectionCriterion, redraw) {
+        const p = new DGIntersectPoint(this, selectionCriterion, this.description(), redraw);
         // if this set of all intersection points changes, then the
         // single selected intersection point must be updated
         this.addDependent(p);
@@ -891,19 +979,19 @@ class DGIntersections extends DGObject {
     }
 
     // return any intersection point
-    any() {
-        return this.intersectionPoint(p => true);
+    any(redraw) {
+        return this.intersectionPoint(p => true, redraw);
     }
 
     // return both intersection points
-    both() {
-        return [this.intersectionPoint(0), this.intersectionPoint(1)];
+    both(redraw) {
+        return [this.intersectionPoint(0, false), this.intersectionPoint(1, redraw)];
     }
 
     // return any point that satisfies the given criterion (the point
     // is invalid if no intersections satisfy the given criterion)
-    select(selectionFun) {
-        return this.intersectionPoint(selectionFun);
+    select(selectionFun, redraw) {
+        return this.intersectionPoint(selectionFun, redraw);
     }
 
     // perform the selection based on the given criterion (this method
@@ -921,6 +1009,11 @@ class DGIntersections extends DGObject {
             return this._intersections[selectionCriterion];
 
         throw "Unknown criterion";
+    }
+
+    isNear(x, y, transform) {
+        // FIXME: perform the check
+        return false;
     }
 }
 
@@ -990,16 +1083,16 @@ class DGIntersectCC extends DGIntersections {
 // by some criteria
 // -----------------------------------------------------------------------------
 class DGIntersectPoint extends DGPoint {
-    constructor(intersections, selectionCriterion, description) {
+    constructor(intersections, selectionCriterion, description, redraw) {
         super();
         this._intersections = intersections;
         this._selectionCriterion = selectionCriterion;
-        this.description(description);
+        this.description(description, false);
         
         // initialize the coordinates
         this.recalcMe();
         // add this object to the global registry
-        DG.addObject(this);
+        DG.addObject(this, redraw);
     }
 
     type() {
@@ -1172,6 +1265,10 @@ class DGIf extends DGObject {
 
     drawMe(view) {
         this._object.drawMe(view);
+    }
+
+    highlight(view) {
+        this._object.highlight(view);
     }
 
     isNear(x, y, transform) {

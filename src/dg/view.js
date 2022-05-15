@@ -13,14 +13,19 @@ class View {
         }
         this._canvas = new Canvas(element, options);
         this.setZoom(xmin, xmax, ymin, ymax);
+        
+        // constructions that are shown by this view
+        this._constructions = [];
 
+        // highlight objects near the current mouse position
+        this._x = this._y = undefined;
+        this._highlighter = null;
+        
+        // tool that react to the mouse and keyboard events
         if (tool)
             this._tool = tool;
         else
             this._tool = new ToolDragFree(this);
-
-        // constructions that are shown by this view
-        this._constructions = [];
 
         // panning tool
         this._startPan = undefined;
@@ -136,6 +141,18 @@ class View {
         this._canvas.line_label(x1t, y1t, x2t, y2t, color, label);
     }
 
+    setHighlighter(highlighter) {
+        this._highlighter = highlighter;
+    }
+    
+    highlight(x, y) {
+        if (!this._highlighter)
+            return;
+        this._constructions.forEach(construction => {
+            construction.highlight(x, y, this.transform.bind(this), this._highlighter);
+        });
+    }
+
     message(msg) {
         this._canvas.message(msg);
     }
@@ -149,34 +166,26 @@ class View {
     }
     
     mousemove(e) {
+        // highlighting
+        const p = this.getMousePosition(e);
+        this.highlight(p.X, p.Y);
+        
+        // panning
+        if (this._startPan) {
+            this.pan(this._startPan, p);
+            this._startPan = p;
+        }
+
+        // specific actions by the current tool 
         if (this._tool)
             this._tool.mousemove(e);
 
-        // panning
-        if (this._startPan) {
-            this.pan(this._startPan, this.getMousePosition(e));
-            this._startPan = this.getMousePosition(e);
-        }
     }
 
     mousedown(e) {
-        if (this._tool)
-            this._tool.mousedown(e);
-
         // panning
         if (e.ctrlKey)
             this._startPan = this.getMousePosition(e);
-    }
-
-    mouseup(e) {
-        if (this._tool)
-            this._tool.mouseup(e);
-
-        // panning
-        if (this._startPan) {
-            this.pan(this._startPan, this.getMousePosition(e));
-            this._startPan = undefined;
-        }
 
         // show description
         if (e.shiftKey) {
@@ -184,17 +193,32 @@ class View {
             const objects = this._constructions[0].findObjectsAt(p.X, p.Y, this.transform.bind(this));
             let msg = "";
             objects.forEach(obj => {
-                msg += obj.label() + ": " + obj.description() + "<br>";
+                msg += obj.describe() + "<br>";
             });
             this.message(msg);
         }
-            
+        
+        // specific actions by the current tool 
+        if (this._tool)
+            this._tool.mousedown(e);
+    }
+
+    mouseup(e) {
+        // panning
+        if (this._startPan) {
+            this.pan(this._startPan, this.getMousePosition(e));
+            this._startPan = undefined;
+        }
+
+        // reset message
+        this.message("");        
+
+        // specific actions by the current tool 
+        if (this._tool)
+            this._tool.mouseup(e);
     }
 
     keydown(e) {
-        if (this._tool)
-            this._tool.keydown(e);
-        
         // zooming
         if (e.ctrlKey && e.code == 'NumpadAdd') { // numpad +
             e.preventDefault();
@@ -203,6 +227,10 @@ class View {
             e.preventDefault();
             this.zoom(1 / 1.5);
         }
+
+        // specific actions by the current tool 
+        if (this._tool)
+            this._tool.keydown(e);
     }
 }
 
