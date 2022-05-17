@@ -21,47 +21,38 @@ class Construction {
             this.draw();
     }
 
-    drawObjects(objects) {
-        this._views.forEach(view => {
-            view.clear();
-            // draw points at the top
-            objects.filter(o => !o.isPoint()).forEach(o => {o.draw(view)});
-            objects.filter(o => o.isPoint()).forEach(o => {o.draw(view)});
-        });
+    visibleObjects() {
+        let objects = this.animationInProgress() ?
+                      this._objects.slice(0, this._animation_step+1) :
+                      this._objects;
+        return objects.filter(obj => obj.visible());
     }
 
-    highlight(x, y, transform, highlighter) {
-        this._objects.forEach(obj => {
-            obj.highlight(obj.isNear(x, y, transform) && highlighter.shouldHighlight(obj));
-        });
+    drawView(view) {
+        view.clear();
+        view.drawObjects(this.visibleObjects());
+        if (this.animationInProgress()) {
+            const currentAnimationObject = this._objects[this._animation_step];
+            view.message(currentAnimationObject.describe());
+        }
     }
 
     draw() {
-        if (this.animationInProgress())
-            this.drawAnimationStep();
-        else
-            this.drawObjects(this._objects);
+        this._views.forEach(view => {
+            this.drawView(view);
+        });            
     }
 
     animationInProgress() {
         return this._animation_step != -1;
     }
 
-    drawAnimationStep() {
-        const objects = this._objects.slice(0, this._animation_step+1);
-        this.drawObjects(objects);
-        const obj = this._objects[this._animation_step];
-        this._views.forEach(view => {
-            view.message(obj.describe());
-        });
-    }
-    
     doAnimationStep(increment) {
         do {
             const n = this._objects.length;
             this._animation_step = (this._animation_step + n + increment) % n;
         } while (!this._objects[this._animation_step].visible());
-        this.drawAnimationStep();
+        this.draw();
     }
 
     nextAnimationStep() {
@@ -80,24 +71,31 @@ class Construction {
         }, 1000);
     }
 
-    findObjectsAt(x, y, transform) {
-        return this._objects.filter(o => !o.hidden()).filter(p => p.isNear(x, y, transform));
+
+    highlightAt(x, y, worldToScreen, highlighter) {
+        this._objects.forEach(obj => {
+            obj.highlight(obj.isNear(x, y, worldToScreen) && highlighter.shouldHighlight(obj));
+        });
     }
 
-    findFreePointAt(x, y, transform) {
-        return this._objects.filter(o => o.isFreePoint() && !o.hidden()).find(p => p.isNear(x, y, transform));
+    findObjectsAt(x, y, worldToScreen) {
+        return this.visibleObjects().filter(p => p.isNear(x, y, worldToScreen));
+    }
+
+    findFreePointAt(x, y, worldToScreen) {
+        return this.findObjectsAt(x, y, worldToScreen).find(o => o.isFreePoint());
     }
     
-    findPointAt(x, y, transform) {
-        return this._objects.filter(o => o.isPoint() && !o.hidden()).find(p => p.isNear(x, y, transform));
+    findPointAt(x, y, worldToScreen) {
+        return this.findObjectsAt(x, y, worldToScreen).find(o => o.isPoint());
     }
 
-    findLineAt(x, y, transform) {
-        return this._objects.filter(o => o.isLine() && !o.hidden()).find(l => l.isNear(x, y, transform));
+    findLineAt(x, y, worldToScreen) {
+        return this.findObjectsAt(x, y, worldToScreen).find(o => o.isLine());
     }
 
-    findCircleAt(x, y, transform) {
-        return this._objects.filter(o => o.isCircle() && !o.hidden()).find(l => l.isNear(x, y, transform));
+    findCircleAt(x, y, worldToScreen) {
+        return this.findObjectsAt(x, y, worldToScreen).find(o => o.isCircle());
     }
 
     includes(label) {

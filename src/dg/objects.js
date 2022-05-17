@@ -524,8 +524,8 @@ class DGPoint extends DGObject {
 
     // check if this point is near the given point on the screen
     // (world-to-screen coordinate transform is given)
-    isNear(x, y, transform) {
-        const [xt, yt] = transform(this.x(), this.y());
+    isNear(x, y, worldToScreen) {
+        const [xt, yt] = worldToScreen(this.x(), this.y());
         const dist2 = (xt - x)*(xt - x) + (yt - y)*(yt - y);
         let EPS = 5;
         EPS *= this.size();
@@ -648,8 +648,8 @@ class DGCircline extends DGObject {
 
     // check if this line is near the given point on the screen
     // (world-to-screen coordinate transform is given)
-    isNear(x, y, transform) {
-        return this._circline.transform(transform).on_circline(CP1.of_complex(new Complex(x, y)));
+    isNear(x, y, worldToScreen) {
+        return this._circline.transform(worldToScreen).on_circline(CP1.of_complex(new Complex(x, y)));
     }
     
     // return internal representation (FIXME: this should be private)
@@ -986,7 +986,7 @@ class DGIntersections extends DGObject {
         throw "Unknown criterion";
     }
 
-    isNear(x, y, transform) {
+    isNear(x, y, worldToScreen) {
         // FIXME: perform the check
         return false;
     }
@@ -1240,12 +1240,12 @@ class DGIf extends DGObject {
         this._object.drawMe(view);
     }
 
-    highlight(view) {
-        this._object.highlight(view);
+    highlight(h, redraw) {
+        this._object.highlight(h, redraw);
     }
 
-    isNear(x, y, transform) {
-        return this._object.isNear(x, y, transform);
+    isNear(x, y, worldToScreen) {
+        return this._object.isNear(x, y, worldToScreen);
     }
     
     drawLabel(view) {

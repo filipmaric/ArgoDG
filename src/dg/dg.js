@@ -2,23 +2,40 @@ import { DGPoint, DGLine, DGCircle, DGSegment, DGClone, DGRandomPoint, DGRandomP
 import { View } from './view.js';
 import { Construction } from './construction.js';
 import { AnimationButtons } from './animation_buttons.js';
-import { ConstructionToolbar } from './tool.js';
+import { ToolDragFree, ConstructionToolbar } from './tool.js';
 
 // -----------------------------------------------------------------------------
 // API and a global register of all DGobjects
 // -----------------------------------------------------------------------------
 
-let _construction = new Construction();
-let _view = null;
+let _global_construction = null;
+let _global_view = null;
+
+// current construction and view (either global or provided by the user)
+let _construction;
+let _view;
+
 let _animation_buttons = null;
 let _construction_toolbar = null;
 
 export function setup(element, options, xmin, xmax, ymin, ymax) {
     if (arguments.length == 2)
-        _view = new View(element, options);
+        _global_view = new View(element, options);
     else
-        _view = new View(element, options, xmin, xmax, ymin, ymax);
+        _global_view = new View(element, options, xmin, xmax, ymin, ymax);
+    _global_construction = new Construction()
+
+    _construction = _global_construction;
+    _view = _global_view;
+    
     _construction.addView(_view);
+    _view.setTool(new ToolDragFree(_view, _construction));
+}
+
+export function setConstruction(construction) {
+    _construction = construction ? construction : _global_construction;
+    _view.setConstruction(_construction);
+    _view.setTool(new ToolDragFree(_view, _construction));
 }
 
 export function construction() {
@@ -33,10 +50,6 @@ export function addObject(o, redraw) {
     _construction.addObject(o, redraw);
 }
     
-export function draw() {
-    _construction.draw();
-}
-
 export function point(x, y, validity_check) {
     const p = new DGPoint(x, y);
     if (validity_check)

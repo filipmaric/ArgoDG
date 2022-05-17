@@ -240,6 +240,12 @@ class Canvas {
         // this.text(5, 15, msg, "15px Arial", "black");
         this._p_status.innerHTML = laTeX2HTML(msg);
     }
+
+    addMessage(msg) {
+        if (this._p_status.innerHTML)
+            this._p_status.innerHTML += "<br/>";
+        this._p_status.innerHTML += laTeX2HTML(msg);
+    }
 }
 
 export { Canvas };

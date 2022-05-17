@@ -1,36 +1,9 @@
 import { View } from './view.js';
 import * as RC from './rc.js';
-import * as DG from './dg.js';
 
 // -----------------------------------------------------------------------------
-// handling of mouse and keyboard events on a view
+// highlighting specific objects as the mouse moves over them
 // -----------------------------------------------------------------------------
-class Tool {
-    constructor(view) {
-        this._view = view;
-    }
-
-    getMousePosition(e) {
-        return [e.offsetX, e.offsetY];
-    }
-
-    mousemove(e) {
-    }
-
-    mousedown(e) {
-    }
-
-    mouseup(e) {
-    }
-    
-    keydown(e) {
-    }
-
-    getObject() {
-        return undefined;
-    }
-}
-
 class Highlighter {
     // this should be overridden
     shouldHighlight(obj) {
@@ -66,11 +39,45 @@ class HighlighterCircles extends Highlighter  {
 }
 const highlighterCircles = new HighlighterCircles();
 
+
+// -----------------------------------------------------------------------------
+// handling of mouse and keyboard events on a view
+// -----------------------------------------------------------------------------
+class Tool {
+    constructor(view) {
+        this._view = view;
+    }
+
+    mousemove(x, y, worldToScreen, screenToWorld) {
+    }
+
+    mousedown(x, y, worldToScreen, screenToWorld) {
+    }
+
+    mouseup(x, y, worldToScreen, screenToWorld) {
+    }
+    
+    keydown(e, worldToScreen, screenToWorld) {
+    }
+
+
+    highlightAt(x, y, worldToScreen) {
+        if (!this._highlighter)
+            return;
+        this._construction.highlightAt(x, y, worldToScreen, this._highlighter);
+    }
+
+    getObject() {
+        return undefined;
+    }
+}
+
+
 class ToolDragFree extends Tool {
     constructor(view, construction) {
         super(view);
 
-        view.setHighlighter(highlighterFreePoints);
+        this._highlighter = highlighterFreePoints;
         
         // mouse button is not yet pressed
         this._mousedown = false;
@@ -83,11 +90,10 @@ class ToolDragFree extends Tool {
         this._construction = construction;
     }
 
-    mousemove(e) {
+    mousemove(x, y, worldToScreen, screenToWorld) {
         if (this._mousedown && this._dragPoint !== undefined) {
-            const [xm, ym] = this.getMousePosition(e);
-            const [x, y] = this._view.transformInverse(xm, ym);
-            if (!this._dragPoint.moveTo(x, y)) {
+            const [xw, yw] = screenToWorld(x, y);
+            if (!this._dragPoint.moveTo(xw, yw)) {
                 const N = 10;
                 for (let d = 1; d <= N; d++) {
                     let ring = [];
@@ -102,36 +108,33 @@ class ToolDragFree extends Tool {
 
                     for (let i = 0; i < ring.length; i++) {
                         const [dx, dy] = ring[i];
-                        const [x, y] = this._view.transformInverse(xm+dx, ym+dy);
-                        if (this._dragPoint.moveTo(x, y))
+                        const [xw, yw] = screenToWorld(x+dx, y+dy);
+                        if (this._dragPoint.moveTo(xw, yw))
                             return;
                     }
                 }
             }
         }
+        this.highlightAt(x, y, worldToScreen);
     }
 
-    mousedown(e) {
+    mousedown(x, y, worldToScreen, screenToWorld) {
         this._mousedown = true;
-        const [x, y] = this.getMousePosition(e);
-        if (this._construction)
-            this._dragPoint = this._construction.findFreePointAt(x, y, this._view.transform.bind(this._view));
-        else
-            this._dragPoint = DG.findFreePointAt(x, y, this._view.transform.bind(this._view));
+        this._dragPoint = this._construction.findFreePointAt(x, y, worldToScreen);
         this._keyboardTarget = this._dragPoint;
     }
 
-    mouseup(e) {
+    mouseup(x, y, worldToScreen, screenToWorld) {
         this._mousedown = false;
         this._dragPoint = undefined;
     }
 
-    keydown(e) {
+    keydown(e, worldToScreen, screenToWorld) {
         if (!this._keyboardTarget)
             return;
         const p = this._keyboardTarget;
         let [x, y] = [p.x(), p.y()];
-        let [xt, yt] = this._view.transform(x, y);
+        let [xt, yt] = worldToScreen(x, y);
         const eps = 2;
         if (e.key == "ArrowRight")
             xt += 1;
@@ -142,7 +145,7 @@ class ToolDragFree extends Tool {
         else if (e.key == "ArrowDown")
             yt += 1;
 
-        [x, y] = this._view.transformInverse(xt, yt)
+        [x, y] = screenToWorld(xt, yt)
         p.moveTo(x, y);
     }
 }
@@ -158,7 +161,7 @@ class Tool_ConstructObject extends Tool {
         this._callback = callback;
 
         this._view.message("Select a " + this.typeName(this._types[0]));
-        this._view.setHighlighter(this.highlighter(this._types[0]));
+        this._highlighter = this.highlighter(this._types[0]);
     }
 
     typeName(t) {
@@ -173,16 +176,15 @@ class Tool_ConstructObject extends Tool {
         if (t == 'c') return highlighterCircles;
     }
 
-    mouseup(e) {
-        const [x, y] = this.getMousePosition(e);
+    mouseup(x, y, worldToScreen, screenToWorld) {
         let obj;
         const k = this._selected.length;
         if (this._types[k] == "p")
-            obj = this._construction.findPointAt(x, y, this._view.transform.bind(this._view));
+            obj = this._construction.findPointAt(x, y, worldToScreen);
         else if (this._types[k] == "l")
-            obj = this._construction.findLineAt(x, y, this._view.transform.bind(this._view));
+            obj = this._construction.findLineAt(x, y, worldToScreen);
         else if (this._types[k] == "c")
-            obj = this._construction.findCircleAt(x, y, this._view.transform.bind(this._view));
+            obj = this._construction.findCircleAt(x, y, worldToScreen);
         if (!obj)
             return;
 
@@ -199,7 +201,11 @@ class Tool_ConstructObject extends Tool {
         this._selected.forEach((obj, i) => {msg += "Selected " + this.typeName(this._types[i]) + " " + obj.label() + ". "});
         msg += "Select a " + this.typeName(this._types[this._selected.length]);
         this._view.message(msg);
-        this._view.setHighlighter(this.highlighter(this._types[this._selected.length]));
+        this._highlighter = this.highlighter(this._types[this._selected.length]);
+    }
+
+    mousemove(x, y, worldToScreen, screenToWorld) {
+        this.highlightAt(x, y, worldToScreen, screenToWorld);
     }
     
     getObject() {
