@@ -182,6 +182,16 @@ class View {
                                  this.screenToWorld.bind(this));
     }
 
+    findObjectsAt(x, y) {
+        let objects = [];
+        this._constructions.forEach(construction => {
+            const c_objects = construction.findObjectsAt(p.X, p.Y,
+                                                         this.worldToScreen.bind(this));
+            objects.push(...c_objects);
+        });
+        return objects;
+    }
+
     mousedown(e) {
         // mouse position
         const p = this.getMousePosition(e);
@@ -193,9 +203,8 @@ class View {
         // show description
         if (e.shiftKey) {
             const p = this.getMousePosition(e);
-            // FIXME: look in all constructions
-            const objects = this._constructions[0].findObjectsAt(p.X, p.Y,
-                                                                 this.worldToScreen.bind(this));
+            const objects = this.findObjectsAt(p.X, p.Y);
+            
             this.message("");
             objects.forEach(obj => {
                 this.addMessage(obj.describe());

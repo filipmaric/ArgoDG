@@ -34,7 +34,7 @@ export function setup(element, options, xmin, xmax, ymin, ymax) {
 
 export function setConstruction(construction) {
     _construction = construction ? construction : _global_construction;
-    _view.setConstruction(_construction);
+    _construction.setView(_view);
     _view.setTool(new ToolDragFree(_view, _construction));
 }
 
@@ -44,6 +44,10 @@ export function construction() {
 
 export function view() {
     return _view;
+}
+
+export function container() {
+    return this.view().canvas().container();
 }
 
 export function addObject(o, redraw) {

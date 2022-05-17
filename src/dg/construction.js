@@ -10,6 +10,11 @@ class Construction {
         this._animation_step = -1;
     }
 
+    setView(view) {
+        this._views = [view];
+        view.addConstruction(this);
+    }
+
     addView(view) {
         this._views.push(view);
         view.addConstruction(this);
