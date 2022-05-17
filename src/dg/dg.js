@@ -28,13 +28,14 @@ export function setup(element, options, xmin, xmax, ymin, ymax) {
     _construction = _global_construction;
     _view = _global_view;
     
-    _construction.addView(_view);
+    _construction.setView(_view);
     _view.setTool(new ToolDragFree(_view, _construction));
 }
 
 export function setConstruction(construction) {
     _construction = construction ? construction : _global_construction;
     _construction.setView(_view);
+    _view.setConstruction(_construction);
     _view.setTool(new ToolDragFree(_view, _construction));
 }
 
@@ -53,7 +54,7 @@ export function container() {
 export function addObject(o, redraw) {
     _construction.addObject(o, redraw);
 }
-    
+
 export function point(x, y, validity_check) {
     const p = new DGPoint(x, y);
     if (validity_check)

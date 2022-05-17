@@ -31,10 +31,12 @@ class View {
 
     setConstruction(construction) {
         this._constructions = [construction];
+        construction.drawView(this);
     }
 
     addConstruction(construction) {
         this._constructions.push(construction);
+        construction.drawView(this);
     }
 
     setVisibleRange(xmin, xmax, ymin, ymax) {
@@ -60,6 +62,7 @@ class View {
     }
 
     redraw() {
+        this.clear();
         this._constructions.forEach(construction => {
             construction.drawView(this);
         });

@@ -1,5 +1,4 @@
 import { Complex, CP1, Circline } from '../complex_geom.js';
-import * as DG from './dg.js';
 import { rgbColor, getOpacity, setOpacity } from './colors.js';
 
 // -----------------------------------------------------------------------------
@@ -27,9 +26,18 @@ class DGObject {
         // no object is highlighted by default
         this._style._highlight = false;
 
-        // each object is a part of some construction
-        // if no construction is specified, we put it into the global object collection
-        this._construction = construction ? construction : DG.construction();
+        // each object can be a part of one or more constructions
+        this._constructions = [];
+        if (construction)
+            this.addConstruction(construction);
+    }
+
+    addConstruction(construction) {
+        this._constructions.push(construction);
+    }
+
+    removeConstruction(construction) {
+        this._constructions = this._constructions.filter(c => c != construction);
     }
 
     type() {
@@ -54,8 +62,10 @@ class DGObject {
 
     // fire event that this object has changed
     fireChangeEvent() {
-        // redraw the construction where this object occurs
-        this._construction.draw();
+        // redraw constructions where this object occurs
+        this._constructions.forEach(construction => {
+            construction.draw();
+        });
     }
     
     // set if this object should be visible
@@ -362,6 +372,11 @@ class DGObject {
         }
         return false;
     }
+
+    // clone
+    clone() {
+        return new DGClone(this);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -412,11 +427,11 @@ class DGClone extends DGObject {
 class DGPoint extends DGObject {
     constructor(x, y) {
         super();
-
+        
         this._validity_check = undefined;
         if (arguments.length == 2)
             this._valid = this.moveTo(x, y);
-        
+
         return this;
     }
 

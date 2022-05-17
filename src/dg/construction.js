@@ -21,7 +21,17 @@ class Construction {
     }
 
     addObject(o, redraw) {
+        if (!o) return;
         this._objects.push(o);
+        o.addConstruction(this);
+        if (redraw === undefined || redraw)
+            this.draw();
+    }
+
+    removeObject(o, redraw) {
+        if (!o) return;
+        this._objects = this._objects.filter(obj => obj != o);
+        o.removeConstruction(this);
         if (redraw === undefined || redraw)
             this.draw();
     }
@@ -34,7 +44,6 @@ class Construction {
     }
 
     drawView(view) {
-        view.clear();
         view.drawObjects(this.visibleObjects());
         if (this.animationInProgress()) {
             const currentAnimationObject = this._objects[this._animation_step];
@@ -44,7 +53,7 @@ class Construction {
 
     draw() {
         this._views.forEach(view => {
-            this.drawView(view);
+            view.redraw();
         });            
     }
 
@@ -101,6 +110,10 @@ class Construction {
 
     findCircleAt(x, y, worldToScreen) {
         return this.findObjectsAt(x, y, worldToScreen).find(o => o.isCircle());
+    }
+
+    find(label) {
+        return this._objects.find(o => o.label() == label);
     }
 
     includes(label) {
