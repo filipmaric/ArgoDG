@@ -1,4 +1,4 @@
-import { DGPoint, DGLine, DGCircle, DGSegment, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle } from './objects.js';
+import { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR } from './objects.js';
 import { View } from './view.js';
 import { Construction } from './construction.js';
 import { AnimationButtons } from './animation_buttons.js';
@@ -8,12 +8,12 @@ import { ToolDragFree, ConstructionToolbar } from './tool.js';
 // API and a global register of all DGobjects
 // -----------------------------------------------------------------------------
 
-let _global_construction = null;
+let _global_construction = new Construction();
 let _global_view = null;
 
 // current construction and view (either global or provided by the user)
-let _construction;
-let _view;
+let _construction = _global_construction;
+let _view = _global_view;
 
 let _animation_buttons = null;
 let _construction_toolbar = null;
@@ -23,7 +23,6 @@ export function setup(element, options, xmin, xmax, ymin, ymax) {
         _global_view = new View(element, options);
     else
         _global_view = new View(element, options, xmin, xmax, ymin, ymax);
-    _global_construction = new Construction()
 
     _construction = _global_construction;
     _view = _global_view;
@@ -55,6 +54,10 @@ export function addObject(o, redraw) {
     _construction.addObject(o, redraw);
 }
 
+export function removeObject(o, redraw) {
+    _construction.removeObject(o, redraw);
+}
+
 export function point(x, y, validity_check) {
     const p = new DGPoint(x, y);
     if (validity_check)
@@ -83,6 +86,11 @@ export function randomPointOnCircle(circle, redraw, validity_check, disc) {
     return randomPointOnCircline(circle, redraw, validity_check, disc);
 }
 
+export function pointFun(fun, dependent) {
+    const p = new DGPointFun(fun, dependent);
+    addObject(p);
+    return p;
+}
 
 export function line(P1, P2) {
     const l = new DGLine(P1, P2);
@@ -189,10 +197,28 @@ export function poincareCircle(c, p, redraw) {
     return pc;
 }
 
+export function poincareCircleR(c, r, redraw) {
+    const pc = new DGPoincareCircleR(c, r);
+    addObject(pc, redraw);
+    return pc;
+}
+
 export function segment(p1, p2, redraw) {
     const s = new DGSegment(p1, p2);
     addObject(s, redraw);
     return s;
+}
+
+export function arc(p1, p, p2, redraw) {
+    const a = new DGArc(p1, p, p2);
+    addObject(a, redraw);
+    return a;
+}
+
+export function num(fun, dependencies, redraw) {
+    const n = new DGNum(fun, dependencies);
+    addObject(n, redraw);
+    return n;
 }
 
 export function findFreePointAt(x, y, transform) {

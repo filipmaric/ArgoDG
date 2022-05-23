@@ -96,7 +96,7 @@ class Canvas {
         ctx.clearRect(0, 0, this.width(), this.height());
     }
 
-    arc(x, y, r, angle_from, angle_to, color, width, dash, fill) {
+    arc(x, y, r, angle_from, angle_to, counterclockwise, color, width, dash, fill) {
         color = color || this._defaultColor;
         width = width || this._defaultWidth;
         dash = dash || this._defaultDash;
@@ -107,7 +107,7 @@ class Canvas {
         ctx.lineWidth = width;
         ctx.setLineDash(dash);
         ctx.beginPath();
-        ctx.arc(x, y, r, angle_from, angle_to, true);
+        ctx.arc(x, y, r, angle_from, angle_to, counterclockwise);
         if (fill) {
             ctx.fillStyle = color;
             ctx.fill();
@@ -124,7 +124,7 @@ class Canvas {
     }
     
     circle(x, y, r, color, width, dash, fill) {
-        this.arc(x, y, r, 0, 2*Math.PI, color, width, dash, fill);
+        this.arc(x, y, r, 0, 2*Math.PI, true, color, width, dash, fill);
     }
 
     segment(x1, y1, x2, y2, color, width, dash) {
@@ -139,6 +139,15 @@ class Canvas {
         ctx.strokeStyle = color;
         ctx.setLineDash(dash);
         ctx.stroke();
+    }
+
+    segment_complement(x1, y1, x2, y2, color, width, dash) {
+        color = color || this._defaultColor;
+        width = width || this._defaultWidth;
+        dash = dash || this._defaultDash;
+        const [x1l, y1l, x2l, y2l] = this.line_endpoints(x1, y1, x2, y2);
+        this.segment(x1l, y1l, x1, y1);
+        this.segment(x2, y2, x2l, y2l);
     }
 
     line_endpoints(x1, y1, x2, y2) {

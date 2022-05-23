@@ -1,14 +1,13 @@
 import * as DG from './dg.js';
-import { CP1, Circline } from '../complex_geom.js';
-
-function absolute() {
-    const O = DG.point(0, 0).hide();
-    const X = DG.point(0, 1).hide();
-    return DG.circle(O, X);
-}
+import { Complex, CP1, Circline } from '../complex_geom.js';
 
 const unit_circle = Circline.unit_circle();
 const in_disc = p => unit_circle.in_disc(p);
+const absolute = (function() {
+    const O = DG.point(0, 0).hide(false);
+    const X = DG.point(0, 1).hide(false);
+    return DG.circle(O, X);
+})();
 
 
 // free point (must be in the unit disc)
@@ -35,7 +34,7 @@ function intersectLC_both(l, c) {
 
 // other intersection of line l and circle c (different from given point A)
 function intersectLC_other(l, c, A) {
-    return DG.intersectCC_select(l, c, p => !p.eq(A.cp1()));
+    return DG.intersectCC_select(l, c, p => !p.eq(A));
 }
 
 // circle centered at O containing A
@@ -50,13 +49,13 @@ function intersectCC_both(c1, c2) {
 
 // other intersection of circles c1 and c2 (different from the given point A)
 function intersectCC_other(c1, c2, A) {
-    return DG.intersectCC_select(c1, c2, p => !p.eq(A.cp1()));
+    return DG.intersectCC_select(c1, c2, p => !p.eq(A));
 }
 
 // bisector of segment AB
 function bisector(A, B) {
-    const c1 = circle(A, B).hide();
-    const c2 = circle(B, A).hide();
+    const c1 = circle(A, B).hide(false);
+    const c2 = circle(B, A).hide(false);
     const [X1, X2] = intersectCC_both(c1, c2).map(p => p.hide());
     const m = line(X1, X2);
     m.description("Bisector of segment " + A.label() + B.label());
@@ -65,10 +64,10 @@ function bisector(A, B) {
 
 // midpoint of segment AB
 function midpoint(A, B) {
-    const m = bisector(A, B).hide();
-    const l = line(A, B).hide();
-    const M = intersectLL(m, l).hide();
-    const Mp = DG.If((A, B) => A.eq(B), DG.clone(B).hide(), M, [A, B]);
+    const m = bisector(A, B).hide(false);
+    const l = line(A, B).hide(false);
+    const M = intersectLL(m, l).hide(false);
+    const Mp = DG.If((A, B) => A.eq(B), DG.clone(B).hide(false), M, [A, B]);
     Mp.description("Midpoint of segment " + A.label() + B.label());
     return Mp;
 }
@@ -182,13 +181,104 @@ function angle_bisector(B, A, C) {
     const k = circle(A, B).hide();
     const c = line(A, B).hide();
     const b = line(A, C).hide();
-    const X = DG.intersectCC_select(b, k, p => !Circline.h_between(p, A.cp1(), C.cp1())).hide();
+    const X = DG.intersectCC_select(b, k, p => !Circline.h_between(p, A, C)).hide();
     const k1 = circle(B, X).hide();
     const k2 = circle(X, B).hide();
     const Y = DG.intersectCC_any(k1, k2).hide();
     const l = line(A, Y);
     return l;
 }
+
+function segment(A, B) {
+    const M = midpoint(A, B).hide(false);
+    return DG.arc(A, M, B);
+}
+
+function dist(A, B) {
+    const [xa, ya] = A.coords();
+    const [xb, yb] = B.coords();
+    return Math.sqrt((xa - xb)*(xa - xb) + (ya - yb)*(ya - yb));
+}
+
+function hdist(A, B) {
+    const u = A.to_complex();
+    const v = B.to_complex();
+    return Math.acosh(1 + (2 * u.sub(v).norm2()) / ((1 - u.norm2()) * (1 - v.norm2())));
+}
+
+function cosPhi(A, B, C) {
+    const u = A.to_complex();
+    const v = B.to_complex();
+    const w = C.to_complex();
+    const a = u.sub(v);
+    const b = w.sub(v);
+    return Complex.scalprod(a, b) / (a.norm() * b.norm());
+}
+
+// point X between P and Q such that hdist(P, X) : hdist(X, Q) = r
+function ratio(P, Q, r) {
+    //    if (r.value() == 1)
+    //        return midpoint(P, Q);
+
+    function fun(P, Q, r) {
+        const v = dist(P.to_complex(), Q.to_complex());
+        const [px, py] = P.coords();
+        const [qx, qy] = Q.coords();
+        const cx = (qx-r*r*px)/(1-r*r);
+        const cy = (qy-r*r*py)/(1-r*r);
+        const rr = v * r / Math.abs(1 - r*r);
+        return [cx, cy, rr];
+    }
+    
+    const C1 = DG.pointFun((P, Q, r) => {
+        const [cx, cy, rr] = fun(P, Q, r);
+        return new CP1(new Complex(cx, cy));
+    }, [P, Q, r]).color("purple") //.hide(false);
+    const C2 = DG.pointFun((P, Q, r) => {
+        const [cx, cy, rr] = fun(P, Q, r);
+        return new CP1(new Complex(cx+rr, cy));
+    }, [P, Q, r]).color("purple")//.hide(false);
+    const k = DG.circle(C1, C2).color("purple")//.hide(false);
+    const h = line(P, Q).color("orange").width(2)//.hide(false);
+    return DG.intersectCC_select(h, k, p => Circline.h_between(P, p, Q));
+}
+
+function on_line_hdist(l, A, d, cond) {
+    const c = DG.poincareCircleR(A, d).hide(false);
+    if (cond === undefined)
+        return DG.intersectCC_both(l, c);
+    else
+        return DG.intersectCC_select(l, c, cond);
+}
+
+function w28(A, B, G)
+{
+    const Mc = midpoint(A, B).hide(false);
+    const h = line(Mc, G).hide(false);
+    const s = DG.num((A, B, G, Mc) => 2 * Math.cosh(hdist(A, B)/2) * Math.sinh(hdist(G, Mc)), [A, B, G, Mc]);
+    const r = DG.num(s => Math.asinh(s), [s]);
+    // point C on line h such that sinh(hdist(C, G)) = s and h_between(C, G, Mc)
+    const C = on_line_hdist(h, G, r, p => Circline.h_between(p, G, Mc));
+    return C;
+}
+
+function w29(h, C, G, Mc) {
+    const s = DG.num((C, G, Mc) => Math.sinh(hdist(C, G)) / (2 * Math.sinh(hdist(G, Mc))), [C, G, Mc]);
+    const r = DG.num(s => Math.acosh(s), [s]);
+    // points A and B on line h such that cosh(d(Mc, A)) = cosh(d(Mc, B)) = s
+    const [A, B] = on_line_hdist(h, Mc, r);
+    return [A, B];
+}
+
+function w30(G, O, Mc) {
+    const s = DG.num((G, O, Mc) => (Math.cosh(hdist(O, Mc)))/(2*Math.cosh(hdist(G, O))*Math.sinh(hdist(G, Mc))) - Math.tanh(hdist(G, O)) * cosPhi(Mc, G, O), [G, O, Mc]);
+    const r = DG.num(s => Math.atanh(1/s), [s]);
+    const h = line(Mc, G).hide(false);
+    const C = on_line_hdist(h, G, r, p => Circline.h_between(p, G, Mc));
+    return C;
+}
+
+
 
 function triangle(A, B, C) {
     const elements = [A, B, C];
@@ -199,13 +289,21 @@ function triangle(A, B, C) {
     const Ma = midpoint(B, C).color("green").label("M_{a}"); elements.push(Ma);
     const Mb = midpoint(A, C).color("green").label("M_{b}"); elements.push(Mb);
     const Mc = midpoint(A, B).color("green").label("M_{c}"); elements.push(Mc);
-    
+
     const ba = bisector(B, C).color("blue").label("b_{a}"); elements.push(ba);
     const bb = bisector(A, C).color("blue").label("b_{b}"); elements.push(bb);
     const bc = bisector(A, B).color("blue").label("b_{c}"); elements.push(bc);
     const O = intersectLL(ba, bb).color("blue").label("O"); elements.push(O);
 
     const o = circle(O, A).color("blue"); elements.push(o);
+
+    // medians
+    const ma = line(A, Ma).color("green").label("m_{a}"); elements.push(ma);
+    const mb = line(B, Mb).color("green").label("m_{b}"); elements.push(mb);
+    const mc = line(C, Mc).color("green").label("m_{c}"); elements.push(mc);
+
+    // centroid
+    const G = intersectLL(ma, mb).color("green").label("G"); elements.push(G);
 
     const ia = angle_bisector(B, A, C).color("orange").label("i_{a}"); elements.push(ia);
     const ib = angle_bisector(A, B, C).color("orange").label("i_{b}"); elements.push(ib);
@@ -223,11 +321,14 @@ function triangle(A, B, C) {
     return elements;
 }
 
-
 export {
     absolute,
     
     point, free,
+
+    line,
+    circle,
+    segment,
 
     intersectLL,
     intersectLC_both,
@@ -242,6 +343,10 @@ export {
     bisector,
     drop_perp,
     foot,
+
+    ratio,
+    w28, w29, w30,
     
-    triangle
+    triangle,
+    
 };

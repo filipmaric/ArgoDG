@@ -52,6 +52,13 @@ class CP1 {
     to_complex() {
         return this.z1.div(this.z2);
     }
+
+    coords() {
+        if (!this.is_inf())
+            return this.to_complex().coords();
+        else
+            return null;
+    }
     
     add(other) {
         if (!this.z2.is_zero() || !other.z2.is_zero())

@@ -44,6 +44,10 @@ class DGObject {
         return "object";
     }
 
+    valid() {
+        return this._valid;
+    }
+
     isFreePoint() {
         return false;
     }
@@ -294,7 +298,7 @@ class DGObject {
     draw(view) {
         if (this.hidden())
             return;
-        if (!this._valid)
+        if (!this.valid())
             return;
         this.drawMe(view);
         if (this.showingLabel())
@@ -362,6 +366,12 @@ class DGObject {
     recalcMe() {
     }
 
+    // check if this point is near the given point on the screen
+    // (world-to-screen coordinate transform is given)
+    isNear(x, y, worldToScreen) {
+        return false;
+    }
+    
     // check if two objects are equal
     eq(other) {
         if (this.isPoint() && other.isPoint()) {
@@ -371,6 +381,11 @@ class DGObject {
             return this.circline().eq(other.circline())
         }
         return false;
+    }
+
+    // data used when this object is passed as a function argument in DGPointFun
+    funArg() {
+        return null;
     }
 
     // clone
@@ -386,7 +401,6 @@ class DGObject {
 class DGClone extends DGObject {
     constructor(object) {
         super();
-        
         this._object = object;
         this._style = {...this._object.style()};
         return new Proxy(this, this);
@@ -394,6 +408,10 @@ class DGClone extends DGObject {
 
     type() {
         return "clone";
+    }
+
+    valid() {
+        return this._object.valid();
     }
 
     drawMe(view) {
@@ -478,6 +496,7 @@ class DGPoint extends DGObject {
         if (this._validity_check == undefined || this._validity_check(CP1.of_xy(x, y))) {
             // update the internal CP1 object
             this._coords = new CP1(new Complex(x, y));
+            this._valid = true; 
             // update all dependent objects
             this.recalc();
 
@@ -486,6 +505,7 @@ class DGPoint extends DGObject {
             return true;
         }
         // the point could not be moved
+        this._valid = false; 
         return false;
     }
 
@@ -502,24 +522,27 @@ class DGPoint extends DGObject {
     // x coordinate (unless infinite)
     x() {
         const c = this.to_complex();
-        return c.re;
+        return c.re();
     }
 
     // y coordinate (unless infinite)
     y() {
         const c = this.to_complex();
-        return c.im;
+        return c.im();
     }
     
     // both coordinates (unless infinite)
     coords() {
-        const c = this.to_complex();
-        return [c.re, c.im];
+        return this.to_complex().coords();
     }
 
     // internal cp1 representation
     cp1() {
         return this._coords;
+    }
+
+    funArg() {
+        return this.cp1();
     }
 
     // check equality of two points
@@ -540,6 +563,8 @@ class DGPoint extends DGObject {
     // check if this point is near the given point on the screen
     // (world-to-screen coordinate transform is given)
     isNear(x, y, worldToScreen) {
+        if (!this.valid())
+            return false;
         const [xt, yt] = worldToScreen(this.x(), this.y());
         const dist2 = (xt - x)*(xt - x) + (yt - y)*(yt - y);
         let EPS = 5;
@@ -601,9 +626,70 @@ class DGRandomPoint extends DGPoint {
             this._coords = new CP1(new Complex(x, y));
             i++;
         } while (!this._validity_check(this._coords) && i < MAX_ITER);
-        if (i == MAX_ITER)
+        if (i == MAX_ITER) {
+            this._valid = false;
             throw "Could not generate valid random point";
+        } else
+            this._valid = true;
     }
+}
+
+class DGPointFun extends DGPoint {
+    constructor(fun, dependencies) {
+        super();
+        this._fun = fun;
+        this._dependencies = dependencies;
+        
+        dependencies.forEach(obj => {
+            obj.addDependent(this);
+        });
+        this.recalcMe();
+    }
+
+    // point is not free
+    isFreePoint() {
+        return false;
+    }
+    
+    recalcMe() {
+        this._valid = this._dependencies.every(obj => obj.valid());
+        if (!this._valid)
+            return;
+        
+        const args = this._dependencies.map(obj => obj.funArg());
+        this._coords = this._fun(...args);
+    }
+}
+
+class DGNum extends DGObject {
+    constructor(fun, dependencies) {
+        super();
+        this._fun = fun;
+        this._dependencies = dependencies;
+        
+        dependencies.forEach(obj => {
+            obj.addDependent(this);
+        });
+        this.recalcMe();
+    }
+
+    value() {
+        return this._value;
+    }
+    
+    funArg() {
+        return this.value();
+    }
+    
+    recalcMe() {
+        this._valid = this._dependencies.every(obj => obj.valid());
+        if (!this._valid)
+            return;
+        const args = this._dependencies.map(obj => obj.funArg());
+        this._value = this._fun(...args);
+        this._valid = isFinite(this._value);
+    }
+    
 }
 
 // -----------------------------------------------------------------------------
@@ -623,13 +709,13 @@ class DGCircline extends DGObject {
         function doDraw(cl, style) {
             if (cl._circline.is_line()) {
                 const [p1, p2] = cl._circline.line_points();
-                const [x1, y1] = [p1.re, p1.im];
-                const [x2, y2] = [p2.re, p2.im];
+                const [x1, y1] = p1.coords();
+                const [x2, y2] = p2.coords();
                 view.line(x1, y1, x2, y2, style);
             } else {
                 const c = cl._circline.circle_center();
                 const r = cl._circline.circle_radius();
-                const [x, y] = [c.re, c.im];
+                const [x, y] = c.coords();
                 view.circle(x, y, r, style);
             }
         }
@@ -655,8 +741,8 @@ class DGCircline extends DGObject {
     drawLabel(view) {
         if (this._circline.is_line() && this._style._label) {
             const [p1, p2] = this._circline.line_points();
-            const [x1, y1] = [p1.re, p1.im];
-            const [x2, y2] = [p2.re, p2.im];
+            const [x1, y1] = p1.coords();
+            const [x2, y2] = p2.coords();
             view.line_label(x1, y1, x2, y2, this._style._color, this._style._label);
         }
     }
@@ -664,12 +750,18 @@ class DGCircline extends DGObject {
     // check if this line is near the given point on the screen
     // (world-to-screen coordinate transform is given)
     isNear(x, y, worldToScreen) {
+        if (!this.valid())
+            return false;
         return this._circline.transform(worldToScreen).on_circline(CP1.of_complex(new Complex(x, y)));
     }
     
     // return internal representation (FIXME: this should be private)
     circline() {
         return this._circline;
+    }
+
+    funArg() {
+        return this.circline();
     }
 
     intersect(other) {
@@ -705,8 +797,10 @@ class DGLine extends DGCircline {
 
     // recalculate the coordinates
     recalcMe() {
-        this._valid = this._p1._valid && this._p2._valid;
-        this._circline = Circline.circline3(this._p1.cp1(), this._p2.cp1(), CP1.inf);
+        this._valid = this._p1.valid() && this._p2.valid();
+        if (!this._valid)
+            return;
+        this._circline = Circline.mk_circline3(this._p1.cp1(), this._p2.cp1(), CP1.inf);
     }
 
     // find intersection of two lines (infinite point if the lines are parallel)
@@ -785,8 +879,10 @@ class DGRandomPointOnCircline extends DGPoint {
 
     // recalculate the coordinates
     recalcMe() {
+        this._valid = this._line.valid();
+        if (!this._valid)
+            return;
         const MAX_ITER = 100;
-        this._valid = this._line._valid;
         let iter = 0;
         do {
             if (this._disc)
@@ -835,7 +931,9 @@ class DGCircle extends DGCircline {
 
     // recalculate the coordinates
     recalcMe() {
-        this._valid = this._c._valid && this._p._valid;
+        this._valid = this._c.valid() && this._p.valid();
+        if (!this._valid)
+            return;
         this._r = this._c.distance(this._p);
         this._circline = Circline.mk_circle(this._c.to_complex(), this._r);
     }
@@ -900,7 +998,9 @@ class DGCircleCenterPoint extends DGPoint {
 
     // recalculate the coordinates
     recalcMe() {
-        this._valid = this._circle._valid;
+        this._valid = this._circle.valid();
+        if (!this._valid)
+            return;
         this._coords = CP1.of_complex(this._circle.circline().circle_center());
     }
 }
@@ -938,7 +1038,9 @@ class DGIntersectLL extends DGPoint {
 
     // recalculate the coordinates
     recalcMe() {
-        this._valid = this._l1._valid && this._l2._valid;
+        this._valid = this._l1.valid() && this._l2.valid();
+        if (!this._valid)
+            return;
         this._coords = DGLine.intersect(this._l1, this._l2);
     }
 }
@@ -1032,7 +1134,9 @@ class DGIntersectLC extends DGIntersections {
 
     // recalculate the coordinates
     recalcMe() {
-        this._valid = this._l._valid && this._c._valid;
+        this._valid = this._l.valid() && this._c.valid();
+        if (!this._valid)
+            return;
         this._intersections = DGCircle.intersectLC(this._l, this._c);
     }
 }
@@ -1063,7 +1167,9 @@ class DGIntersectCC extends DGIntersections {
 
     // recalculate the coordinates
     recalcMe() {
-        this._valid = this._c1._valid && this._c2._valid;
+        this._valid = this._c1.valid() && this._c2.valid();
+        if (!this._valid)
+            return;
         this._intersections = DGCircle.intersectCC(this._c1, this._c2);
     }
 }
@@ -1095,7 +1201,9 @@ class DGIntersectPoint extends DGPoint {
     // recalculate the coordinates
     recalcMe() {
         // if no point satisfies the selection criterion, then this point is invalid
-        this._valid = this._intersections._valid;
+        this._valid = this._intersections.valid();
+        if (!this._valid)
+            return;
         try {
             this._coords = this._intersections.selectPoint(this._selectionCriterion);
         } catch (err) {
@@ -1127,14 +1235,20 @@ class DGIf extends DGObject {
     }
 
     isPoint() {
+        if (!this._valid)
+            return false;
         return this._object.isPoint();
     }
 
     isLine() {
+        if (!this._valid)
+            return false;
         return this._object.isLine();
     }
 
     isCircle() {
+        if (!this._valid)
+            return false;
         return this._object.isLine();
     }
     
@@ -1214,6 +1328,10 @@ class DGIf extends DGObject {
         return this._object.cp1();
     }
 
+    funArg() {
+        return this._object.funArg();
+    }
+
     x() {
         return this._object.x();
     }
@@ -1243,12 +1361,20 @@ class DGIf extends DGObject {
     }
 
     recalcMe() {
+        this._valid = this._dependencies.every(obj => obj.valid());
+        if (!this._valid)
+            return;
+
         if (this._condition(...this._dependencies)) {
             this._object = this._thenObject;
         } else {
             this._object = this._elseObject;
         }
-        this._valid = this._object._valid;
+        this._valid = this._object.valid();
+    }
+
+    valid() {
+        return this._valid && this._object.valid();
     }
 
     drawMe(view) {
@@ -1256,10 +1382,14 @@ class DGIf extends DGObject {
     }
 
     highlight(h, redraw) {
+        if (!this._valid)
+            return false;
         this._object.highlight(h, redraw);
     }
 
     isNear(x, y, worldToScreen) {
+        if (!this._valid)
+            return false;
         return this._object.isNear(x, y, worldToScreen);
     }
     
@@ -1289,22 +1419,120 @@ class DGPoincareLine extends DGCircline {
     }
 
     recalcMe() {
+        this._valid = this._p1.valid() && this._p2.valid();
+        if (!this._valid)
+            return;
         const u = this._p1.cp1().to_complex();
         const v = this._p2.cp1().to_complex();
-        const A = Complex.i.mult((u.mult(v.cnj())).sub(v.mult(u.cnj())));
-        const B = Complex.i.mult(v.scale(u.norm2() + 1).sub(u.scale(v.norm2() + 1)));
-        this._circline = new Circline(A, B, B.cnj(), A);
-        this._valid = this._p1._valid && this._p2._valid;
+        this._circline = Circline.mk_poincare_line(u, v);
     }
 }
 
-class DGPoincareCircle extends DGCircline {
-    constructor(c, p) {
+class DGArc extends DGCircline {
+    constructor(p1, p, p2) {
+        super();
+        this._p1 = p1;
+        this._p = p;
+        this._p2 = p2;
+        p1.addDependent(this);
+        p.addDependent(this);
+        p2.addDependent(this);
+        this.recalcMe();
+    }
+
+    type() {
+        return "arc";
+    }
+    
+    recalcMe() {
+        this._valid = this._p1.valid() && this._p.valid() && this._p2.valid();
+        if (!this._valid)
+            return;
+        this._circline = Circline.mk_circline3(this._p1, this._p, this._p2);
+    }
+
+    drawMe(view) {
+        function canonAngle(alpha) {
+            const k = Math.floor((alpha + Math.PI) / (2 * Math.PI));
+            let res = alpha - 2*k*Math.PI;
+            if (res < 0)
+                res += 2*Math.PI;
+            return res;
+        }
+        
+        function doDraw(cl, style) {
+            if (cl._circline.is_line()) {
+                const [x1, y1] = cl._p1.coords();
+                const [x, y] = cl._p.coords();
+                const [x2, y2] = cl._p2.coords();
+                if (Circline.between(cl._p1, cl._p, cl._p2))
+                    view.segment(x1, y1, x2, y2, style);
+                else
+                    view.segment_complement(x1, y1, x2, y2, style);
+            } else {
+                const c = cl._circline.circle_center();
+                const r = cl._circline.circle_radius();
+                const a1 = -cl._p1.cp1().to_complex().sub(c).arg();
+                const a = -cl._p.cp1().to_complex().sub(c).arg();
+                const a2 = -cl._p2.cp1().to_complex().sub(c).arg();
+                const [x, y] = c.coords();
+                view.arc(x, y, r, a1, a2, canonAngle(a2 - a1) < canonAngle(a - a1), style);
+            }
+        }
+        doDraw(this, {color: this.color(), width: this.width(), dash: this.dash()});
+    }
+}
+
+class DGPoincareCircleR extends DGCircline {
+    constructor(c, r) {
         super();
         this._c = c;
-        this._p = p;
-        // if any of the two points move, this line must be updated
+        this._r = r;
+        // if the center moves, this circle must be updated
         c.addDependent(this);
+        // if r is symbolic and it changes, this circle must be updated
+        if (r instanceof DGNum)
+            r.addDependent(this);
+        // initialize the circline
+        this.recalcMe();
+    }
+
+    type() {
+        return "poincare circle";
+    }
+
+    defaultDescription() {
+        return "Poincare circle c(" + this._c.label() + ", " + this.r() + ")";
+    }
+
+    r() {
+        return this._r instanceof DGNum ? this._r.value() : this._r;
+    }
+
+    recalcMe() {
+        this._valid = this._c.valid() && (!(this._r instanceof DGNum) || this._r.valid());
+        if (!this._valid)
+            return;
+        const r = this.r();
+        if (r <= 0) {
+            this._valid = false;
+            return;
+        }
+        const u = this._c.cp1().to_complex();
+        this._circline = Circline.mk_poincare_circle(u, r);
+    }
+}
+
+class DGPoincareCircle extends DGPoincareCircleR {
+    constructor(c, p) {
+        function r(c, p) {
+            const u = c.to_complex();
+            const v = p.to_complex();
+            return Math.acosh(1 + (2 * u.sub(v).norm2()) / ((1 - u.norm2())* (1 - v.norm2())));
+        }
+        super(c, new DGNum((c, p) => r(c, p), [c, p]));
+        // if the point p moves, this circle must be updated
+        this._p = p;
         p.addDependent(this);
         // initialize the circline
         this.recalcMe();
@@ -1317,16 +1545,6 @@ class DGPoincareCircle extends DGCircline {
     defaultDescription() {
         return "Poincare circle c(" + this._c.label() + ", " + this._p.label() + ")";
     }
-    
-    recalcMe() {
-        const u = this._c.cp1().to_complex();
-        const v = this._p.cp1().to_complex();
-        const r = Math.acosh(1 + (2 * u.sub(v).norm2()) / ((1 - u.norm2())* (1 - v.norm2())));
-        const ue = u.scale(1 / ((1 - u.norm2())*(Math.cosh(r) - 1)/2 + 1));
-        const re = ((1 - u.norm2()) * Math.sinh(r)) / ((1 - u.norm2()) * (Math.cosh(r) - 1) + 2);
-        this._circline = Circline.mk_circle(ue, re);
-        this._valid = this._c._valid && this._p._valid;
-    }
 }
 
-export { DGPoint, DGLine, DGCircle, DGSegment, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle };
+export { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR };

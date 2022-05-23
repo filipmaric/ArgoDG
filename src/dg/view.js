@@ -131,6 +131,13 @@ class View {
         this._canvas.segment(x1t, y1t, x2t, y2t, options.color, options.width, options.dash);
     }
 
+    segment_complement(x1, y1, x2, y2, options) {
+        options = options || {}
+        const [x1t, y1t] = this.worldToScreen(x1, y1);
+        const [x2t, y2t] = this.worldToScreen(x2, y2);
+        this._canvas.segment_complement(x1t, y1t, x2t, y2t, options.color, options.width, options.dash);
+    }
+    
     line(x1, y1, x2, y2, options) {
         options = options || {}
         const [x1t, y1t] = this.worldToScreen(x1, y1);
@@ -143,6 +150,13 @@ class View {
         const [xt, yt] = this.worldToScreen(x, y);
         const rt = r * this._scalex; // FIXME: different scales
         this._canvas.circle(xt, yt, rt, options.color, options.width, options.dash);
+    }
+
+    arc(x, y, r, start_angle, end_angle, counterclockwise, options) {
+        options = options || {};
+        const [xt, yt] = this.worldToScreen(x, y);
+        const rt = r * this._scalex; // FIXME: different scales
+        this._canvas.arc(xt, yt, rt, start_angle, end_angle, counterclockwise, options.color, options.width, options.dash);
     }
 
     line_label(x1, y1, x2, y2, color, label) {

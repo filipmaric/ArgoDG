@@ -4,6 +4,7 @@ import { ComplexMatrix2x2 } from './complex_matrix.js';
 import { Moebius } from './moebius.js';
 
 class Circline {
+    // Circline is represented by a Hermitean matrix
     constructor(A, B, C, D) {
         if (arguments.length == 1 && arguments[0] instanceof ComplexMatrix2x2)
             this.H = arguments[0];
@@ -19,51 +20,47 @@ class Circline {
         }
     }
 
+    // Circline that represents an Euclidean circle with center in a (finite) complex number a
+    // that has a radius r
     static mk_circle(a, r) {
         return new Circline(Complex.one, a.uminus(),
                             a.cnj().uminus(), a.mult(a.cnj()).sub(Complex.of_real(r*r)));
     }
 
+    // Circline that represents an Euclidean line that joins two given (finite) complex numbers 
     static mk_line(z1, z2) {
         const B = z2.sub(z1).mult(Complex.i);
         return new Circline(Complex.zero, B,
                             B.cnj(), Complex.cnj_mix(B.uminus(), z1));
     }
+
+    // Circline that represents a Poincare disc line that joins two given (finite) complex numbers
+    // inside the disc
+    static mk_poincare_line(z1, z2) {
+        const A = Complex.i.mult((z1.mult(z2.cnj())).sub(z2.mult(z1.cnj())));
+        const B = Complex.i.mult(z2.scale(z1.norm2() + 1).sub(z1.scale(z2.norm2() + 1)));
+        return new Circline(A, B, B.cnj(), A);
+    }
+
+    // Circline that represents a Poincare circle that is centered in a (finite) complex number a
+    // and has the radius r
+    static mk_poincare_circle(a, r) {
+        const ae = a.scale(1 / ((1 - a.norm2())*(Math.cosh(r) - 1)/2 + 1));
+        const re = ((1 - a.norm2()) * Math.sinh(r)) / ((1 - a.norm2()) * (Math.cosh(r) - 1) + 2);
+        return Circline.mk_circle(ae, re);
+    }
+
+    // Circline determined by tree points (either complex or CP1)
+    static mk_circline3(z1, z2, z3) {
+        if (!(z1 instanceof CP1)) z1 = z1.cp1();
+        if (!(z2 instanceof CP1)) z2 = z2.cp1();
+        if (!(z3 instanceof CP1)) z3 = z3.cp1();
+        const M = Moebius.moebius_01inf(z1, z2, z3);
+        return M.inv().moebius_circline(Circline.x_axis());
+    }
+
+    // several special circlines
     
-    on_circline(z, eps) {
-        if (!eps)
-            eps = 1e-2;
-        return (z.conjugate().vec_mult(this.H.multCP1(z))).is_zero(eps);
-    }
-
-    in_disc(z) {
-        const EPS = 1e-12;
-        const v = z.conjugate().vec_mult(this.H.multCP1(z));
-        return v.re < -EPS;
-    }
-
-    is_line() {
-        return this.H.A.is_zero();
-    }
-
-    is_circle() {
-        return !this.is_line();
-    }
-
-    circle_center() {
-        return this.H.B.uminus().div(this.H.A);
-    }
-
-    circle_radius() {
-        return Math.sqrt(this.H.B.mult(this.H.C).sub(this.H.A.mult(this.H.D)).div(this.H.A.mult(this.H.A)).re);
-    }
-
-    line_points() {
-        const z1 = this.H.D.mult(this.H.B).uminus().div(this.H.B.mult(this.H.C).scale(2));
-        const z2 = z1.add(Complex.i.mult((this.H.B.arg() > 0 ? this.H.B.uminus() : this.H.B).sgn()));
-        return [z1, z2];
-    }
-
     static unit_circle() {
         return new Circline(Complex.one, Complex.zero, Complex.zero, Complex.minus_one);
     }
@@ -76,46 +73,132 @@ class Circline {
         return new Circline(Complex.zero, Complex.one, Complex.one, Complex.zero);
     }
 
-    static circline3(z1, z2, z3) {
-        const M = Moebius.moebius_01inf(z1, z2, z3);
-        return M.inv().moebius_circline(Circline.x_axis());
+    // check if this circline is an Euclidean line
+    is_line() {
+        return this.H.A.is_zero();
     }
 
-    static same_arc(w1, z1, w2, z2) {
-        const cr = CP1.cross_ratio(w1, z1, w2, z2);
-        return !cr.is_inf() && cr.to_complex().is_real() && cr.to_complex().re >= 0;
+    // check if this circline is an Euclidean circle
+    is_circle() {
+        return !this.is_line();
     }
 
-    static other_arc(w1, z1, w2, z2) {
-        const cr = CP1.cross_ratio(w1, z1, w2, z2);
-        return !cr.is_inf() && cr.to_complex().is_real() && cr.to_complex().re < 0;
+    // Euclidean center of the current circline (works only if this is an Euclidean circle)
+    circle_center() {
+        return this.H.B.uminus().div(this.H.A);
+    }
+
+    // Euclidean radius of the current circline (works only if this is an Euclidean circle)
+    circle_radius() {
+        return Math.sqrt(this.H.B.mult(this.H.C).sub(this.H.A.mult(this.H.D)).div(this.H.A.mult(this.H.A)).re());
+    }
+
+    // Two points on the current circline (works only if this is an Euclidean line)
+    line_points() {
+        const z1 = this.H.D.mult(this.H.B).uminus().div(this.H.B.mult(this.H.C).scale(2));
+        const z2 = z1.add(Complex.i.mult((this.H.B.arg() > 0 ? this.H.B.uminus() : this.H.B).sgn()));
+        return [z1, z2];
     }
     
-    static same_circle(w1, z1, w2, z2) {
+    // checks if the given CP1 point lies on this circline (precision can be changed)
+    on_circline(z, eps) {
+        if (!eps)
+            eps = 1e-2;
+        return (z.conjugate().vec_mult(this.H.multCP1(z))).is_zero(eps);
+    }
+
+    // checks if the given CP1 point lines within the disc surounded by this circline (precision
+    // can be changed)
+    in_disc(z, eps) {
+        if (!eps)
+            eps = 1e-12;
+        const v = z.conjugate().vec_mult(this.H.multCP1(z));
+        return v.re() < -eps;
+    }
+
+
+    // check if z1 and z2 lie on the same arc determined by w1 and w2 (i.e., if z2 is on the
+    // same arc as z1 between w1 and w2, on the circline determined by w1, z1 and w2)
+    // w1, z1, w2, z2 are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
+    static same_arc(w1, z1, w2, z2) {
+        if (!(z1 instanceof CP1)) z1 = z1.cp1();
+        if (!(w1 instanceof CP1)) w1 = w1.cp1();
+        if (!(z2 instanceof CP1)) z2 = z2.cp1();
+        if (!(w2 instanceof CP1)) w2 = w2.cp1();
+        const cr = CP1.cross_ratio(w1, z1, w2, z2);
+        return !cr.is_inf() && cr.to_complex().is_real() && cr.to_complex().re() >= 0;
+    }
+
+    // check if z1 and z2 lie different arcs determined by w1 and w2 (i.e., if z2 is on the
+    // on the circline determined by w1, z1 and w2, but not on the same arc between w1 and w2
+    // as z1)
+    // w1, z1, w2, z2 are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
+    static other_arc(w1, z1, w2, z2) {
+        if (!(z1 instanceof CP1)) z1 = z1.cp1();
+        if (!(w1 instanceof CP1)) w1 = w1.cp1();
+        if (!(z2 instanceof CP1)) z2 = z2.cp1();
+        if (!(w2 instanceof CP1)) w2 = w2.cp1();
+
+        const cr = CP1.cross_ratio(w1, z1, w2, z2);
+        return !cr.is_inf() && cr.to_complex().is_real() && cr.to_complex().re() < 0;
+    }
+
+    // check if w1, z1, w2, and z2 all lie on the same circline
+    // w1, z1, w2, z2 are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
+    static same_circline(w1, z1, w2, z2) {
+        if (!(z1 instanceof CP1)) z1 = z1.cp1();
+        if (!(w1 instanceof CP1)) w1 = w1.cp1();
+        if (!(z2 instanceof CP1)) z2 = z2.cp1();
+        if (!(w2 instanceof CP1)) w2 = w2.cp1();
         const cr = CP1.cross_ratio(w1, z1, w2, z2);
         return cr.is_inf() || cr.to_complex().is_real();
     }
 
-    // on a line
+    // check if w is between z1 and z2 (in Euclidean sense)
+    // w, z1, z2 are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
     static between(z1, w, z2) {
+        if (!(z1 instanceof CP1)) z1 = z1.cp1();
+        if (!(w  instanceof CP1)) w  = w.cp1();
+        if (!(z2 instanceof CP1)) z2 = z2.cp1();
         return Circline.other_arc(CP1.inf, z1, w, z2);
     }
 
-    // on a line
+    // check if z1, z2, and z3 are collinear (in Euclidean sense)
+    // z1, z2, z3 are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
     static collinear(z1, z2, z3) {
-        return Circline.same_circle(z1, z2, z3, CP1.inf);
+        if (!(z1 instanceof CP1)) z1 = z1.cp1();
+        if (!(z2 instanceof CP1)) z2 = z2.cp1();
+        if (!(z3 instanceof CP1)) z3 = z3.cp1();
+        return Circline.same_circline(z1, z2, z3, CP1.inf);
     }
 
-    // on a line
-    static same_side(w1, w2, z1) {
-        return Circline.collinear(w1, w2, z1) && !Circline.between(w1, z1, w2);
+    // check if w1 and w2 are on the same side of z (on the same Euclidean half-line)
+    // w1, w2, z are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
+    static same_side(w1, w2, z) {
+        if (!(w1 instanceof CP1)) w1 = w1.cp1();
+        if (!(w2 instanceof CP1)) w2 = w2.cp1();
+        if (!(z  instanceof CP1)) z  = z.cp1();
+        return Circline.collinear(w1, w2, z) && !Circline.between(w1, z, w2);
     }
 
-    // on a poincare line 
+    // check if w is h-betwen z1 and z2 on the Poincare line joining z1 and z2 within the unit disc
+    // z1, w, z2 are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
     static h_between(z1, w, z2) {
-        return Circline.other_arc(w, z1, w.inversion(), z2);
+        if (!(z1 instanceof CP1)) z1 = z1.cp1();
+        if (!(w  instanceof CP1)) w  = w.cp1();
+        if (!(z2 instanceof CP1)) z2 = z2.cp1();
+
+        return unit_circle.in_disc(w) && Circline.other_arc(w, z1, w.inversion(), z2) 
     }
 
+    // random three different points on this circline
     three_points() {
         if (!this._three_points) {
             if (this.is_line()) {
@@ -130,6 +213,7 @@ class Circline {
         return this._three_points;
     }
 
+    // a single random point on this circline
     random_point() {
         const [z1, z2, z3] = this.three_points().map(p => CP1.of_complex(p));
         const M = Moebius.moebius_01inf(z1, z2, z3);
@@ -148,11 +232,12 @@ class Circline {
         return M.inv().moebius_pt(CP1.of_real(x));
     }
 
+    // random point on this circline that lies within the given disc (usually the unit disc)
     random_point_in_disc(disc) {
         const [p1, p2] = this.intersect(disc);
         const [z1, z2, z3] = this.three_points().map(p => CP1.of_complex(p));
         const M = Moebius.moebius_01inf(z1, z2, z3);
-        const [x1, x2] = [p1, p2].map(p => M.moebius_pt(p).to_complex().re).sort()
+        const [x1, x2] = [p1, p2].map(p => M.moebius_pt(p).to_complex().re()).sort()
         let p;
         const MAX_ITER = 100;
         let iter = 0;
@@ -171,6 +256,7 @@ class Circline {
         return p;
     }
 
+    // Moebius transformation that maps this circline to x-axis
     moebius_to_xaxis() {
         if (!this._moebius_to_xaxis) {
             const [z1, z2, z3] = this.three_points().map(p => CP1.of_complex(p));
@@ -179,6 +265,7 @@ class Circline {
         return this._moebius_to_xaxis;
     }
 
+    // intersection of this and other circline (fictive intersections are also returned)
     intersect(other) {
         const M = this.moebius_to_xaxis();
         const cm = M.moebius_circline(other);
@@ -188,36 +275,41 @@ class Circline {
             p1 = CP1.inf;
             if (B.is_imag())
                 return [p1, p1];
-            p2 = CP1.of_real(- D.re / (2 * B.re));
+            p2 = CP1.of_real(- D.re() / (2 * B.re()));
             return [p1, p2].map(p => M.moebius_inv_pt(p));
         } else {
-            const discr = B.re * B.re - A.re * D.re;
+            const discr = B.re() * B.re() - A.re() * D.re();
             if (discr <= 0) {
                 const sqrt = Math.sqrt(-discr);
-                const [p1, p2] = [new Complex(-B.re / A.re, +sqrt / A.re),
-                                  new Complex(-B.re / A.re, -sqrt / A.re)];
+                const [p1, p2] = [new Complex(-B.re() / A.re(), +sqrt / A.re()),
+                                  new Complex(-B.re() / A.re(), -sqrt / A.re())];
                 return [p1, p2].map(p => M.moebius_inv_pt(CP1.of_complex(p)));
             } else {
                 const sqrt = Math.sqrt(discr);
-                const [p1, p2] = [(-B.re + sqrt) / A.re,
-                                  (-B.re - sqrt) / A.re];
+                const [p1, p2] = [(-B.re() + sqrt) / A.re(),
+                                  (-B.re() - sqrt) / A.re()];
                 return [p1, p2].map(p => M.moebius_inv_pt(CP1.of_real(p)));
             }
         }
     }
 
-
+    // apply the given Moebius transform (given by a function that acts on pairs of coordinates)
+    // to this circline
     transform(t) {
         let three_points = this.three_points();
-        if (three_points.some(p => isNaN(p.re)))
+        if (three_points.some(p => isNaN(p.re())))
             return this;
         three_points = three_points.map(p => {
-            const [re, im] = t(p.re, p.im);
+            const [re, im] = t(p.re(), p.im());
             return CP1.of_complex(new Complex(re, im));
         });
-        return Circline.circline3(...three_points);
+        return Circline.mk_circline3(...three_points);
     }
 
+    // convert the H matrix to canonical form (used for easy circline comparison)
+    // A is set to 1 if possible,
+    // otherwise D is set to 1 if possible,
+    // otherwise B is set to 1
     normalize() {
         if (!this.H.A.is_zero()) {
             this.H = this.H.multC(this.H.A.recip());
@@ -228,11 +320,15 @@ class Circline {
         }
     }
 
+    // check if this circline is equal to the other one 
     eq(other) {
         this.normalize();
         other.normalize();
-        return this.H.A.eq(other.H.A) && this.H.B.eq(other.H.B) && this.H.C.eq(other.H.C) && this.H.D.eq(other.H.D);
+        return this.H.eq(other.H);
     }
 }
+
+const unit_circle = Circline.unit_circle();
+
 
 export { Circline };

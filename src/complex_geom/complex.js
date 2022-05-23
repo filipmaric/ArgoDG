@@ -3,8 +3,8 @@
  */
 class Complex {
     constructor(re, im) {
-        this.re = re;
-        this.im = im;
+        this._re = re;
+        this._im = im;
     }
 
     static of_real(re) {
@@ -15,6 +15,8 @@ class Complex {
         return new Complex(0, im);
     }
 
+    // some special complex numbers
+    
     static get zero() {
         return zero;
     }
@@ -35,90 +37,142 @@ class Complex {
         return minus_i;
     }
 
+
+    // copy of this object
     clone() {
-        return new Complex(this.re, this.im);
+        return new Complex(this.re(), this.im());
     }
 
-    add(other) {
-        return new Complex(this.re + other.re, this.im + other.im);
+    // getting basic properties
+    re() {
+        return this._re;
     }
 
-    mult(other) {
-        if (typeof other == "number")
-            return this.scale(number);
-        return new Complex(this.re * other.re - this.im * other.im,
-                           this.re * other.im + this.im * other.re);
-    }
-
-    scale(k) {
-        return new Complex(k * this.re, k * this.im);
-    }
-
-    uminus() {
-        return this.scale(-1);
-    }
-
-    sub(other) {
-        return this.add(other.uminus());
-    }
-
-    norm2() {
-        return this.re * this.re + this.im * this.im;
-    }
-
-    norm() {
-        return Math.sqrt(this.norm2());
-    }
-
-    arg() {
-        return Math.atan2(this.im, this.re);
-    }
-
-    sgn() {
-        return this.scale(1 / this.norm());
-    }
-
-    cnj() {
-        return new Complex(this.re, -this.im);
+    im() {
+        return this._im;
     }
     
-    recip() {
-        return this.cnj().scale(1 / this.norm2())
-    }
-
-    div(other) {
-        return this.mult(other.recip());
+    coords() {
+        return [this.re(), this.im()];
     }
 
     // precision for checking zero
     static EPS = 1e-8;
-    
+
+    // check if this complex number is zero (up to the given precision)
     is_zero(eps) {
         if (!eps)
             eps = Complex.EPS;
         return this.norm2() < eps * eps;
     }
 
-    is_real() {
-        return Math.abs(this.im) < Complex.EPS;
+    // check if two numbers are equal (up to the given precision)
+    eq(other, eps) {
+        return this.sub(other).is_zero(eps);
     }
 
-    is_imag() {
-        return Math.abs(this.re) < Complex.EPS;
+    // check if this complex number is real (up to the given precision)
+    is_real(eps) {
+        if (!eps)
+            eps = Complex.EPS;
+        return Math.abs(this.im()) < eps;
+    }
+
+    // check if this complex number is pure imaginary (up to the given precision)
+    is_imag(eps) {
+        if (!eps)
+            eps = Complex.EPS;
+        
+        return Math.abs(this.re()) < Complex.EPS;
+    }
+
+    // all complex numbers are finite
+    is_inf() {
+        return false;
+    }
+
+    // just in case that a conversion to complex is called on a complex number
+    to_complex() {
+        return this;
+    }
+
+
+    // Arithmetic operations
+
+    // addition
+    add(other) {
+        return new Complex(this.re() + other.re(), this.im() + other.im());
+    }
+
+    // unary minus
+    uminus() {
+        return this.scale(-1);
+    }
+
+    // subtraction
+    sub(other) {
+        return this.add(other.uminus());
+    }
+
+    // multiplication
+    mult(other) {
+        if (typeof other == "number")
+            return this.scale(number);
+        return new Complex(this.re() * other.re() - this.im() * other.im(),
+                           this.re() * other.im() + this.im() * other.re());
+    }
+
+    // multiplication (scaling) by a real scalar
+    scale(k) {
+        return new Complex(k * this.re(), k * this.im());
     }
     
-    eq(other) {
-        return this.sub(other).is_zero();
+    // division
+    div(other) {
+        return this.mult(other.recip());
     }
 
+
+    // Euclidean norm
+    norm() {
+        return Math.sqrt(this.norm2());
+    }
+    
+    // square of Euclidean norm
+    norm2() {
+        return this.re() * this.re() + this.im() * this.im();
+    }
+
+    // argument (angle in (-pi, pi])
+    arg() {
+        return Math.atan2(this.im(), this.re());
+    }
+
+    // signum (z -> z / |z|)
+    sgn() {
+        return this.scale(1 / this.norm());
+    }
+
+    // complex conjugate (x + iy -> x - iy)
+    cnj() {
+        return new Complex(this.re(), -this.im());
+    }
+
+    // reciprocal (z -> 1/z)
+    recip() {
+        return this.cnj().scale(1 / this.norm2())
+    }
+
+    // cnj_mix(x1 + iy2, x2 + iy2) = 2*(x1*x2 + y1*y2) + 0*i
     static cnj_mix(z1, z2) {
         return z1.cnj().mult(z2).add(z2.cnj().mult(z1));
     }
 
+    // scalar product when complex numbers are looked as vectors [x1, y1] [x2, y2]
+    // scalprod(x1 + iy1, x2 + iy2) = x1*x2 + y1*y2
     static scalprod(z1, z2) {
-        return Complex.cnj_mix(other).scale(1 / 2);
+        return Complex.cnj_mix(z1, z2).scale(1 / 2).re();
     }
-
 }
 
 const zero      = new Complex( 0,  0);
