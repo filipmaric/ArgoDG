@@ -134,10 +134,10 @@ function tangents(A, c, redraw) {
 // tangent from point A that touch circle c, that is different from the given line t
 // non-deg: A outside c
 function other_tangent(A, c, t, redraw) {
-    const [t1, t2] = tangents(A, c, false);
+    const [t1, t2] = tangents(A, c, false).map(t => t.hide(false));
     const t_ = DG.If((x, y) => x.eq(y), t2, t1, [t, t1], false);
     t_.description("Tangent from point " + A.label() + " to circle " + c.label(), false);
-    return t_.show(redraw);
+    return t_.show(true, redraw);
 }
 
 // homothety of a line
@@ -148,7 +148,9 @@ function homothety_line() {
 // parallel line to line l that contains point A
 function parallel(l, A, redraw) {
     const n = drop_perp(l, A, false).hide(false);
-    return drop_perp(n, A, redraw);
+    const p = drop_perp(n, A, redraw);
+    p.description("Parallel to line " + l.label() + " containing point " + A.label());
+    return p;
 }
 
 
@@ -176,7 +178,7 @@ function towards_aux(X, Y, p, q, redraw) {
     if (p*q < 0)
         Z = reflectP(X, Z, false).hide(false);
 
-    return DG.If((X, Y) => X.eq(Y), DG.clone(X, false).hide(false), Z, [X, Y], redraw);
+    return DG.If((X, Y) => X.eq(Y), DG.clone(X, false).hide(false), Z, [X, Y], redraw).show(true, redraw);
 }
 
 // point B such that vector AB equals vector XY
@@ -192,14 +194,21 @@ function translate_vec(X, Y, A, redraw) {
                        DG.clone(Y, false).hide(false),
                        B,
                        [X, A]).hide(false),
-                 [X, Y], redraw);
+                 [X, Y], redraw).show(true, redraw);
 }
 
 // point W such that XY : ZW = p : q
 function towards(X, Y, Z, p, q, redraw) {
     const YY = towards_aux(X, Y, p, q, false).hide(false);
-    const w = translate_vec(X, YY, Z, false).show(false);
-    w.description("Point X such that " + X.label() + Y.label() + ":" + Z.label() + "X" + " = " + p + ":" + q, redraw);
+    const w = translate_vec(X, YY, Z, false);
+    if (X == Z && p == 2 && q == 1)
+        w.description("Midpoint of segment " + X.label() + Y.label());
+    else if (X == Z && p == 1 && q == 2)
+        w.description("Reflection of point " + X.label() + " about point " + Y.label(), redraw);
+    else if (X == Z && p == 1 && q == -1)
+        w.description("Reflection of point " + Y.label() + " about point " + X.label(), redraw);
+    else
+        w.description("Point X such that " + X.label() + Y.label() + ":" + Z.label() + "X" + " = " + p + ":" + q, redraw);
     return w;
 }
 
