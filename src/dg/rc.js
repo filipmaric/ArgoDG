@@ -341,9 +341,9 @@ function triangle(A, B, C) {
     const Hc = intersectLL(hc, c).color("red").label("H_{c}"); elements.push(Hc);
 
     // circles over triangle sides
-    const ca = circle(Ma, B).color("DimGray"); elements.push(ca);
-    const cb = circle(Mb, A).color("DimGray"); elements.push(cb);
-    const cc = circle(Mc, A).color("DimGray"); elements.push(cc);
+    const ca = circle(Ma, B).color("DimGray").label("c(B, C)"); elements.push(ca);
+    const cb = circle(Mb, A).color("DimGray").label("c(A, C)"); elements.push(cb);
+    const cc = circle(Mc, A).color("DimGray").label("c(A, B)"); elements.push(cc);
 
     // medians
     const ma = line(A, Ma).color("green").label("m_{a}"); elements.push(ma);
@@ -354,9 +354,9 @@ function triangle(A, B, C) {
     const G = intersectLL(ma, mb).color("green").label("G"); elements.push(G);
 
     // midlines
-    const MaMb = line(Ma, Mb).color("DarkTurquoise"); elements.push(MaMb);
-    const MaMc = line(Ma, Mc).color("DarkTurquoise"); elements.push(MaMc);
-    const MbMc = line(Mb, Mc).color("DarkTurquoise"); elements.push(MbMc);
+    const MaMb = line(Ma, Mb).color("DarkTurquoise").label("MaMb"); elements.push(MaMb);
+    const MaMc = line(Ma, Mc).color("DarkTurquoise").label("MaMc"); elements.push(MaMc);
+    const MbMc = line(Mb, Mc).color("DarkTurquoise").label("MbMc"); elements.push(MbMc);
 
     // Euler line
     const e = line(O, H).color("purple").label("e"); elements.push(e);

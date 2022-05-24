@@ -1,5 +1,6 @@
 import { View } from './view.js';
 import * as RC from './rc.js';
+import * as ToolImages from './tool_images.js';
 
 // -----------------------------------------------------------------------------
 // highlighting specific objects as the mouse moves over them
@@ -294,6 +295,16 @@ class ToolIntersectLC extends Tool_ConstructObject {
     }
 }
 
+class ToolIntersectLCBoth extends Tool_ConstructObject {
+    constructor(view, construction, callback) {
+        super(view, "lc", construction, callback);
+    }
+
+    construct(l, c) {
+        return RC.intersectLC_both(l, c);
+    }
+}
+
 class ToolIntersectCC extends Tool_ConstructObject {
     constructor(view, construction, callback) {
         super(view, "ccp", construction, callback);
@@ -301,6 +312,16 @@ class ToolIntersectCC extends Tool_ConstructObject {
 
     construct(c1, c2, p) {
         return RC.intersectCC_other(c1, c2, p);
+    }
+}
+
+class ToolIntersectCCBoth extends Tool_ConstructObject {
+    constructor(view, construction, callback) {
+        super(view, "cc", construction, callback);
+    }
+
+    construct(c1, c2, p) {
+        return RC.intersectCC_both(c1, c2);
     }
 }
 
@@ -316,81 +337,73 @@ class ConstructionToolbar {
         
         const self = this;
         
-        const btnDrag = document.createElement("button");
-        btnDrag.innerHTML = "drag";
-        btnDrag.addEventListener("click", function() {
+        function createButton(title, src, onClick) {
+            const img = document.createElement("img");
+            img.style.border = "1px solid #555";
+            img.style.borderRadius = "5px";
+            img.style.margin = "1px";
+            img.style.width = "32px";
+            img.src = src;
+            img.title = title;
+            img.addEventListener("click", function() {
+                [...divTools.getElementsByTagName("img")].forEach(img => { img.style.filter = "brightness(100%)"; });
+                img.style.filter = "brightness(80%)";
+                onClick();
+            });
+            divTools.append(img);
+        }
+
+        
+        createButton("drag free points", ToolImages.drag, function() {
             self._view.message("");
             self.setTool(new ToolDragFree(self._view, self._construction));
-
         });
-        divTools.append(btnDrag);
 
-        const btnLine = document.createElement("button");
-        btnLine.innerHTML = "line";
-        btnLine.addEventListener("click", function() {
+        createButton("line", ToolImages.line, function() {
             self.setTool(new ToolLine(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnLine);
 
-        const btnCircle = document.createElement("button");
-        btnCircle.innerHTML = "circle";
-        btnCircle.addEventListener("click", function() {
+        createButton("circle", ToolImages.circle, function() {
             self.setTool(new ToolCircle(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnCircle);
-        
-        const btnMidpoint = document.createElement("button");
-        btnMidpoint.innerHTML = "midpoint";
-        btnMidpoint.addEventListener("click", function() {
+
+        createButton("midpoint", ToolImages.midpoint, function() {
             self.setTool(new ToolMidpoint(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnMidpoint);
 
-        const btnBisector = document.createElement("button");
-        btnBisector.innerHTML = "bisector";
-        btnBisector.addEventListener("click", function() {
+        createButton("segment bisector", ToolImages.bisector, function() {
             self.setTool(new ToolBisector(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnBisector);
-        
-        const btnDropPerp = document.createElement("button");
-        btnDropPerp.innerHTML = "perp";
-        btnDropPerp.addEventListener("click", function() {
+
+        createButton("drop perpendicular", ToolImages.perp, function() {
             self.setTool(new ToolDropPerp(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnDropPerp);
 
-        const btnParallel = document.createElement("button");
-        btnParallel.innerHTML = "parallel";
-        btnParallel.addEventListener("click", function() {
+        createButton("parallel", ToolImages.parallel, function() {
             self.setTool(new ToolParallel(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnParallel);
 
         divTools.append(document.createElement("br"));
         
-        const btnIntersectLL = document.createElement("button");
-        btnIntersectLL.innerHTML = "intersectLL";
-        btnIntersectLL.addEventListener("click", function() {
+        createButton("intersect two lines", ToolImages.intersectLL, function() {
             self.setTool(new ToolIntersectLL(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnIntersectLL);
 
-        const btnIntersectLC = document.createElement("button");
-        btnIntersectLC.innerHTML = "intersectLC";
-        btnIntersectLC.addEventListener("click", function() {
+        createButton("both intersections of line and circle", ToolImages.intersectLC_both, function() {
+            self.setTool(new ToolIntersectLCBoth(self._view, self._construction, self._tool_callback));
+        });
+
+        createButton("other intersection of line and circle", ToolImages.intersectLC_other, function() {
             self.setTool(new ToolIntersectLC(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnIntersectLC);
+        
+        createButton("both intersections of two circles", ToolImages.intersectCC_both, function() {
+            self.setTool(new ToolIntersectCCBoth(self._view, self._construction, self._tool_callback));
+        });
 
-        const btnIntersectCC = document.createElement("button");
-        btnIntersectCC.innerHTML = "intersectCC";
-        btnIntersectCC.addEventListener("click", function() {
+        createButton("other intersection of two circles", ToolImages.intersectCC_other, function() {
             self.setTool(new ToolIntersectCC(self._view, self._construction, self._tool_callback));
         });
-        divTools.append(btnIntersectCC);
-        
-        [...divTools.getElementsByTagName("button")].forEach(button => { button.style.fontSize = "12px"; });
     }
 
     setTool(tool) {
