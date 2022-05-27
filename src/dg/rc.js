@@ -67,7 +67,7 @@ function bisector(A, B, redraw) {
     const c2 = circle(B, A, false).hide(false);
     const [X1, X2] = intersectCC_both(c1, c2, false).map(p => p.hide(false));
     const m = line(X1, X2, redraw);
-    m.description("Bisector of segment " + A.label() + B.label(), false);
+    m.description("Bisector of segment " + A.label() + B.label(), redraw);
     return m;
 }
 

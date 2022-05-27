@@ -5,16 +5,34 @@
     <title>ArgoDG</title>
     <script src="../dist/DG.js"></script>
     <script src="../dist/RC.js"></script>
+    <style>
+      table.objects, table.objects td {
+          border: 1px solid black;
+          border-collapse: collapse;
+      }
+
+      table.objects {
+          min-width: 200px;
+      }
+    </style>
   </head>
   <body>
-    <div id="mycanvas"></div>
+    <div id="mycanvas" style="float:left"></div>
+    <div style="margin-left: 550px">
+      <h1>Constructed objects</h1>
+      <div id="objects"></div>
+    </div>
     
     <script>
       DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 150, 0, 150);
       const A = RC.point(80, 95).color("blue").label("A");
       const B = RC.point(20, 40).color("blue").label("B");
       const C = RC.point(100, 40).color("blue").label("C");
-      const D = RC.point(50, 20).color("blue").label("D");
+      const D = RC.point(20, 80).color("blue").label("D");
+      const a = RC.line(A, B);
+      const c = RC.circle(C, D);
+      const [p1, p2] = RC.intersectLC_both(a, c);
+      DG.construction().addView(new DG.ListView(document.getElementById("objects")));
       DG.constructionToolbar();
     </script>
   </body>

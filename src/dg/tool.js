@@ -193,8 +193,12 @@ class Tool_ConstructObject extends Tool {
         
         if (this._selected.length == this._types.length) {
             this._object = this.construct(...this._selected);
-            if (this._callback)
-                this._callback(this._object);
+            if (this._callback) {
+                if (Array.isArray(this._object))
+                    this._object.forEach(obj => this._callback(obj));
+                else
+                    this._callback(this._object);
+            }
             this._selected = [];
         }
 

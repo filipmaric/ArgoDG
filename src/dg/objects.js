@@ -257,6 +257,8 @@ class DGObject {
             result = this.label();
             if (this.description())
                 result += ": " + this.description();
+            else
+                result = this.type() + " " + result;
         } else {
             if (this.description())
                 result = this.description();
@@ -764,8 +766,8 @@ class DGCircline extends DGObject {
         return this.circline();
     }
 
-    intersect(other) {
-        return this.circline().intersect(other.circline());
+    intersect(other, includeFictive) {
+        return this.circline().intersect(other.circline(), includeFictive);
     }
 }
 
@@ -805,7 +807,7 @@ class DGLine extends DGCircline {
 
     // find intersection of two lines (infinite point if the lines are parallel)
     static intersect(l1, l2) {
-        const p = l1.intersect(l2);
+        const p = l1.intersect(l2, false);
         if (!p[0].is_inf())
             return p[0];
         if (!p[1].is_inf())
@@ -959,13 +961,13 @@ class DGCircle extends DGCircline {
     }
 
     // intersect a line and a circle
-    static intersectLC(l, c) {
-        return l.intersect(c);
+    static intersectLC(l, c, includeFictive) {
+        return l.intersect(c, includeFictive);
     }
 
     // intersect two circles
-    static intersectCC(c1, c2) {
-        return c1.intersect(c2);
+    static intersectCC(c1, c2, includeFictive) {
+        return c1.intersect(c2, includeFictive);
     }
 }
 
@@ -1097,8 +1099,12 @@ class DGIntersections extends DGObject {
             throw "No selected points";
         }
         
-        if (typeof selectionCriterion == "number")
+        if (typeof selectionCriterion == "number") {
+            if (this._intersections.length <= selectionCriterion) {
+                throw "No selected points";
+            }
             return this._intersections[selectionCriterion];
+        }
 
         throw "Unknown criterion";
     }
@@ -1113,10 +1119,11 @@ class DGIntersections extends DGObject {
 // all intersections of a line and a circle
 // -----------------------------------------------------------------------------
 class DGIntersectLC extends DGIntersections {
-    constructor(l, c) {
+    constructor(l, c, includeFictive) {
         super();
         this._l = l;
         this._c = c;
+        this._includeFictive = includeFictive;
         // if the circle or the line changes, the intersection must be updated
         c.addDependent(this);
         l.addDependent(this);
@@ -1137,7 +1144,7 @@ class DGIntersectLC extends DGIntersections {
         this._valid = this._l.valid() && this._c.valid();
         if (!this._valid)
             return;
-        this._intersections = DGCircle.intersectLC(this._l, this._c);
+        this._intersections = DGCircle.intersectLC(this._l, this._c, this._includeFictive);
     }
 }
 
@@ -1146,10 +1153,11 @@ class DGIntersectLC extends DGIntersections {
 // all intersections of two circles
 // -----------------------------------------------------------------------------
 class DGIntersectCC extends DGIntersections {
-    constructor(c1, c2) {
+    constructor(c1, c2, includeFictive) {
         super();
         this._c1 = c1;
         this._c2 = c2;
+        this._includeFictive = includeFictive;
         // if any of the circles changes, the intersection must be updated
         c1.addDependent(this);
         c2.addDependent(this);
@@ -1170,7 +1178,7 @@ class DGIntersectCC extends DGIntersections {
         this._valid = this._c1.valid() && this._c2.valid();
         if (!this._valid)
             return;
-        this._intersections = DGCircle.intersectCC(this._c1, this._c2);
+        this._intersections = DGCircle.intersectCC(this._c1, this._c2, this._includeFictive);
     }
 }
 

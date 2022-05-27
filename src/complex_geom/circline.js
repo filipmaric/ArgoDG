@@ -265,8 +265,8 @@ class Circline {
         return this._moebius_to_xaxis;
     }
 
-    // intersection of this and other circline (fictive intersections are also returned)
-    intersect(other) {
+    // intersection of this and other circline (fictive intersections can also be returned)
+    intersect(other, includeFictive) {
         const M = this.moebius_to_xaxis();
         const cm = M.moebius_circline(other);
         const [A, B, D] = [cm.H.A, cm.H.B, cm.H.D];
@@ -279,11 +279,15 @@ class Circline {
             return [p1, p2].map(p => M.moebius_inv_pt(p));
         } else {
             const discr = B.re() * B.re() - A.re() * D.re();
-            if (discr <= 0) {
-                const sqrt = Math.sqrt(-discr);
-                const [p1, p2] = [new Complex(-B.re() / A.re(), +sqrt / A.re()),
-                                  new Complex(-B.re() / A.re(), -sqrt / A.re())];
-                return [p1, p2].map(p => M.moebius_inv_pt(CP1.of_complex(p)));
+            if (discr < 0) {
+                if (includeFictive) {
+                    // fictive intersections
+                    const sqrt = Math.sqrt(-discr);
+                    const [p1, p2] = [new Complex(-B.re() / A.re(), +sqrt / A.re()),
+                                      new Complex(-B.re() / A.re(), -sqrt / A.re())];
+                    return [p1, p2].map(p => M.moebius_inv_pt(CP1.of_complex(p)));
+                } else
+                    return [];
             } else {
                 const sqrt = Math.sqrt(discr);
                 const [p1, p2] = [(-B.re() + sqrt) / A.re(),

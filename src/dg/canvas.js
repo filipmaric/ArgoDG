@@ -234,6 +234,11 @@ class Canvas {
     text(x, y, txt, font, color) {
         const ctx = this.context();
         ctx.font = font || "15px Arial";
+
+        const metrics = ctx.measureText(txt);
+        const width = metrics.width;
+        if (x + metrics.width > this.width())
+            x -= (x + metrics.width - this.width());
         
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
