@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../../dist/DG.js"></script>
+    <script src="../../dist/RCP.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    
+    <script type="module">
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, -1.2, 1.2, -1.2, 1.2);
+
+      const abs = RCP.absolute.width("3"); 
+      
+      const A = RCP.point(-0.6, -0.2).label("A");
+      const B = RCP.point(0.6, -0.4).label("B");
+
+      const G = RCP.point(0, -0.3).label("G");
+
+      const C = RCP.w28(A, B, G).color("red").label("C");
+      const Mb = RCP.midpoint(A, C).color("green").label("M_b");
+      const Ma = RCP.midpoint(B, C).color("green").label("M_a");
+      const Mc = RCP.midpoint(A, B).color("green").label("M_c");
+
+      const ma = RCP.line(A, Ma);
+      const mb = RCP.line(B, Mb);
+      const mc = RCP.line(C, Mc);
+
+      const c = RCP.line(A, B).color("blue");
+      const b = RCP.line(A, C).color("blue");
+      const a = RCP.line(B, C).color("blue");
+
+
+      const sa = RCP.segment(B, C).color("red").width(2);
+      const sb = RCP.segment(A, C).color("red").width(2);
+      const sc = RCP.segment(A, B).color("red").width(2);
+      
+    </script>
+  </body>
+</html>
