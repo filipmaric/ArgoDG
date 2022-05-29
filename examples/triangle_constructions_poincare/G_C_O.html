@@ -12,13 +12,13 @@
     <script type="module">
       DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, -1.2, 1.2, -1.2, 1.2);
 
-      const abs = RCP.absolute.width("3"); 
+      const abs = RCP.absolute.width("3");
       
       const G = RCP.point(-0.005, -0.02).label("G").color("blue");
-      const Mc = RCP.point(0.05, -0.22).label("Mc").color("blue");
       const O = RCP.point(0.08, -0.08).label("O").color("blue");
-      const C = RCP.w30(G, O, Mc).label("C");
-      console.log(C.cp1().to_complex());
+      const C = RCP.point(-0.242, 0.808).label("C").color("blue");
+      
+      const Mc = RCP.w31(G, O, C).label("M_c");
       const cc = RCP.circle(O, C).color("blue");
       
       const mc = RCP.line(O, Mc).color("blue");
@@ -36,6 +36,7 @@
       const sa = RCP.segment(B, C).color("red").width(2);
       const sb = RCP.segment(A, C).color("red").width(2);
       const sc = RCP.segment(A, B).color("red").width(2);
+
     </script>
   </body>
 </html>

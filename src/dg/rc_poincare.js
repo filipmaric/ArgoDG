@@ -233,13 +233,13 @@ function ratio(P, Q, r) {
     const C1 = DG.pointFun((P, Q, r) => {
         const [cx, cy, rr] = fun(P, Q, r);
         return new CP1(new Complex(cx, cy));
-    }, [P, Q, r]).color("purple") //.hide(false);
+    }, [P, Q, r]).hide(false);
     const C2 = DG.pointFun((P, Q, r) => {
         const [cx, cy, rr] = fun(P, Q, r);
         return new CP1(new Complex(cx+rr, cy));
-    }, [P, Q, r]).color("purple")//.hide(false);
-    const k = DG.circle(C1, C2).color("purple")//.hide(false);
-    const h = line(P, Q).color("orange").width(2)//.hide(false);
+    }, [P, Q, r]).hide(false);
+    const k = DG.circle(C1, C2).hide(false);
+    const h = line(P, Q).hide(false);
     return DG.intersectCC_select(h, k, p => Circline.h_between(P, p, Q));
 }
 
@@ -279,6 +279,13 @@ function w30(G, O, Mc) {
 }
 
 
+function w31(G, O, C) {
+    const s = DG.num((G, O, C) => (2*Math.cosh(hdist(C, O)) / (Math.cosh(hdist(G, O))*Math.sinh(hdist(C, G)))) - Math.tanh(hdist(G, O)) * cosPhi(C, G, O), [G, O, C]);
+    const r = DG.num(s => Math.atanh(1/s), [s]);
+    const h = line(C, G).hide(false);
+    const Mc = on_line_hdist(h, G, r, p => Circline.h_between(C, G, p));
+    return Mc;
+}
 
 function triangle(A, B, C) {
     const elements = [A, B, C];
@@ -339,13 +346,17 @@ export {
     midpoint,
     reflectP,
     reflectL,
+    reflectP_line,
 
     bisector,
     drop_perp,
     foot,
 
+    touching_circle,
+    other_tangent,
+    
     ratio,
-    w28, w29, w30,
+    w28, w29, w30, w31,
     
     triangle,
     

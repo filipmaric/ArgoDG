@@ -101,6 +101,8 @@ class CP1 {
     }
 
     eq(other) {
+        if (!(other instanceof CP1))
+            other = other.cp1();
         return this.sub(other).is_zero();
     }
 

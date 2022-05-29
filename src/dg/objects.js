@@ -1014,7 +1014,6 @@ class DGCircleCenterPoint extends DGPoint {
 class DGIntersectLL extends DGPoint {
     constructor(l1, l2) {
         super();
-        
         this._l1 = l1;
         this._l2 = l2;
         // if any of the two line line changes, the intersection must be updated
@@ -1403,6 +1402,10 @@ class DGIf extends DGObject {
     
     drawLabel(view) {
         this._object.drawLabel(view);
+    }
+
+    eq(other) {
+        return this._object.eq(other);
     }
 }
 

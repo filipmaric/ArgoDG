@@ -234,7 +234,7 @@ class Circline {
 
     // random point on this circline that lies within the given disc (usually the unit disc)
     random_point_in_disc(disc) {
-        const [p1, p2] = this.intersect(disc);
+        const [p1, p2] = this.intersect(disc, true);
         const [z1, z2, z3] = this.three_points().map(p => CP1.of_complex(p));
         const M = Moebius.moebius_01inf(z1, z2, z3);
         const [x1, x2] = [p1, p2].map(p => M.moebius_pt(p).to_complex().re()).sort()
@@ -252,7 +252,7 @@ class Circline {
             }
             p = M.inv().moebius_pt(CP1.of_real(x));
             iter++;
-        } while (!disc.in_disc(p) || iter >= MAX_ITER);        
+        } while (!disc.in_disc(p) && iter < MAX_ITER);
         return p;
     }
 
