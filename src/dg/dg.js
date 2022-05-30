@@ -1,4 +1,4 @@
-import { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR } from './objects.js';
+import { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR, REDRAW, NO_REDRAW } from './objects.js';
 import { View } from './view.js';
 import { Construction } from './construction.js';
 import { AnimationButtons } from './animation_buttons.js';
@@ -58,11 +58,11 @@ export function removeObject(o, redraw) {
     _construction.removeObject(o, redraw);
 }
 
-export function point(x, y, validity_check) {
+export function point(x, y, redraw, validity_check) {
     const p = new DGPoint(x, y);
     if (validity_check)
         p.validityCheck(validity_check);
-    addObject(p);
+    addObject(p, redraw);
     return p;
 }
 
@@ -86,9 +86,9 @@ export function randomPointOnCircle(circle, redraw, validity_check, disc) {
     return randomPointOnCircline(circle, redraw, validity_check, disc);
 }
 
-export function pointFun(fun, dependent) {
+export function pointFun(fun, dependent, redraw) {
     const p = new DGPointFun(fun, dependent);
-    addObject(p);
+    addObject(p, redraw);
     return p;
 }
 

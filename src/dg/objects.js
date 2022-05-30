@@ -1,6 +1,9 @@
 import { Complex, CP1, Circline } from '../complex_geom.js';
 import { rgbColor, getOpacity, setOpacity } from './colors.js';
 
+const REDRAW = true;
+const NO_REDRAW = false;
+
 // -----------------------------------------------------------------------------
 // the base class for all geometric objects
 // -----------------------------------------------------------------------------
@@ -191,7 +194,7 @@ class DGObject {
     }
 
     // get/set the label of the object
-    label(str, show, redraw) {
+    label(str, redraw, show) {
         // str is undefined get the label
         if (str === undefined) {
             if (this._style._label)
@@ -220,6 +223,14 @@ class DGObject {
     // check if the label should be shown
     showingLabel() {
         return this._style._showing_label;
+    }
+
+    hideLabel(redraw) {
+        this._style._showing_label = false;
+        // change (redraw) event is fired unless that is explicitly turned off
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
+        return this;
     }
 
     // get or set the description
@@ -673,6 +684,7 @@ class DGNum extends DGObject {
             obj.addDependent(this);
         });
         this.recalcMe();
+        this.hide(false);
     }
 
     value() {
@@ -1281,14 +1293,14 @@ class DGIf extends DGObject {
         return this;
     }
     
-    label(l, show_label, redraw) {
+    label(l, redraw, show_label) {
         // if l is undefined get the label
         if (l === undefined)
             return this._object.label();
         
         // otherwise set the label
-        this._thenObject.label(l, show_label, redraw);
-        this._elseObject.label(l, show_label, redraw);
+        this._thenObject.label(l, redraw, show_label);
+        this._elseObject.label(l, redraw, show_label);
         return this;
     }
 
@@ -1558,4 +1570,4 @@ class DGPoincareCircle extends DGPoincareCircleR {
     }
 }
 
-export { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR };
+export { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR, REDRAW, NO_REDRAW };

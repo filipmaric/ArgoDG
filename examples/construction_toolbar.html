@@ -28,10 +28,6 @@
       const A = RC.point(80, 95).color("blue").label("A");
       const B = RC.point(20, 40).color("blue").label("B");
       const C = RC.point(100, 40).color("blue").label("C");
-      const D = RC.point(20, 80).color("blue").label("D");
-      const a = RC.line(A, B);
-      const c = RC.circle(C, D);
-      const [p1, p2] = RC.intersectLC_both(a, c);
       DG.construction().addView(new DG.ListView(document.getElementById("objects")));
       DG.constructionToolbar();
     </script>
