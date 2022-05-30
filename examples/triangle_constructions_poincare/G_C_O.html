@@ -5,6 +5,7 @@
     <title>ArgoDG</title>
     <script src="../../dist/DG.js"></script>
     <script src="../../dist/RCP.js"></script>
+    <script src="../../dist/ANP.js"></script>
   </head>
   <body>
     <div id="mycanvas"></div>
@@ -18,11 +19,11 @@
       const O = RCP.point(0.08, -0.08).label("O").color("blue");
       const C = RCP.point(-0.242, 0.808).label("C").color("blue");
       
-      const Mc = RCP.w31(G, O, C).label("M_c");
-      const cc = RCP.circle(O, C).color("blue");
+      const Mc = ANP.Mc_from_GOC(G, O, C).label("M_c");
+      const cc = RCP.circle(O, C).color("blue").label("o");
       
-      const mc = RCP.line(O, Mc).color("blue");
-      const c = RCP.drop_perp(mc, Mc).hide();
+      const bc = RCP.line(O, Mc).label("b_c").color("blue");
+      const c = RCP.drop_perp(bc, Mc).label("c").hide();
       const [A, B] = RCP.intersectLC_both(c, cc);
       A.label("A");
       B.label("B");

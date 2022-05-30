@@ -670,7 +670,11 @@ class DGPointFun extends DGPoint {
             return;
         
         const args = this._dependencies.map(obj => obj.funArg());
-        this._coords = this._fun(...args);
+        const c = this._fun(...args);
+        if (c instanceof CP1)
+            this._coords = c;
+        else
+            this._coords = new CP1(c);
     }
 }
 

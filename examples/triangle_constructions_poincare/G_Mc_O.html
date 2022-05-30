@@ -5,6 +5,7 @@
     <title>ArgoDG</title>
     <script src="../../dist/DG.js"></script>
     <script src="../../dist/RCP.js"></script>
+    <script src="../../dist/ANP.js"></script>
   </head>
   <body>
     <div id="mycanvas"></div>
@@ -15,23 +16,22 @@
       const abs = RCP.absolute.width("3"); 
       
       const G = RCP.point(-0.005, -0.02).label("G").color("blue");
-      const Mc = RCP.point(0.05, -0.22).label("Mc").color("blue");
+      const Mc = RCP.point(0.05, -0.22).label("M_c").color("blue");
       const O = RCP.point(0.08, -0.08).label("O").color("blue");
-      const C = RCP.w30(G, O, Mc).label("C");
-      console.log(C.cp1().to_complex());
-      const cc = RCP.circle(O, C).color("blue");
+      const C = ANP.C_from_GOMc(G, O, Mc).label("C");
+      const cc = RCP.circle(O, C).color("blue").label("o");
       
-      const mc = RCP.line(O, Mc).color("blue");
-      const c = RCP.drop_perp(mc, Mc).hide();
+      const bc = RCP.line(O, Mc).color("blue").label("b_c");
+      const c = RCP.drop_perp(bc, Mc).label("c");
       const [A, B] = RCP.intersectLC_both(c, cc);
       A.label("A");
       B.label("B");
 
       const Ma = RCP.midpoint(B, C).label("M_a").color("green");
       const Mb = RCP.midpoint(A, C).label("M_b").color("green");
-      const ga = RCP.line(A, Ma).color("green");
-      const gb = RCP.line(B, Mb).color("green");
-      const gc = RCP.line(C, Mc).color("green");
+      const ma = RCP.line(A, Ma).color("green").label("m_a");
+      const mb = RCP.line(B, Mb).color("green").label("m_b");
+      const mc = RCP.line(C, Mc).color("green").label("m_c");
 
       const sa = RCP.segment(B, C).color("red").width(2);
       const sb = RCP.segment(A, C).color("red").width(2);

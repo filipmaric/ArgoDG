@@ -202,7 +202,7 @@ class View {
     findObjectsAt(x, y) {
         let objects = [];
         this._constructions.forEach(construction => {
-            const c_objects = construction.findObjectsAt(p.X, p.Y,
+            const c_objects = construction.findObjectsAt(x, y,
                                                          this.worldToScreen.bind(this));
             objects.push(...c_objects);
         });

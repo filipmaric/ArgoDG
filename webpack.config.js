@@ -13,6 +13,10 @@ module.exports = {
             import: './src/rc_poincare.js',
             dependOn: 'DG',
         },
+        ANP: {
+            import: './src/an_poincare.js',
+            dependOn: 'DG',
+        },
     },
     output: {
         filename: '[name].js',

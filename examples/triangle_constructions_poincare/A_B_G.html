@@ -5,6 +5,7 @@
     <title>ArgoDG</title>
     <script src="../../dist/DG.js"></script>
     <script src="../../dist/RCP.js"></script>
+    <script src="../../dist/ANP.js"></script>
   </head>
   <body>
     <div id="mycanvas"></div>
@@ -19,18 +20,18 @@
 
       const G = RCP.point(0, -0.3).label("G");
 
-      const C = RCP.w28(A, B, G).color("red").label("C");
+      const C = ANP.C_from_ABG(A, B, G).color("red").label("C");
       const Mb = RCP.midpoint(A, C).color("green").label("M_b");
       const Ma = RCP.midpoint(B, C).color("green").label("M_a");
       const Mc = RCP.midpoint(A, B).color("green").label("M_c");
 
-      const ma = RCP.line(A, Ma);
-      const mb = RCP.line(B, Mb);
-      const mc = RCP.line(C, Mc);
+      const ma = RCP.line(A, Ma).label("ma");
+      const mb = RCP.line(B, Mb).label("mb");
+      const mc = RCP.line(C, Mc).label("mc");
 
-      const c = RCP.line(A, B).color("blue");
-      const b = RCP.line(A, C).color("blue");
-      const a = RCP.line(B, C).color("blue");
+      const c = RCP.line(A, B).color("blue").label("c");
+      const b = RCP.line(A, C).color("blue").label("b");
+      const a = RCP.line(B, C).color("blue").label("a");
 
 
       const sa = RCP.segment(B, C).color("red").width(2);

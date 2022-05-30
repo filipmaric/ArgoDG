@@ -1,5 +1,5 @@
 import * as DG from './dg.js';
-import { Complex, CP1, Circline } from '../complex_geom.js';
+import { Circline } from '../complex_geom.js';
 import { REDRAW, NO_REDRAW } from './objects.js';
 
 const unit_circle = Circline.unit_circle();
@@ -206,99 +206,6 @@ function segment(A, B, redraw) {
     return s;
 }
 
-function dist(A, B) {
-    const [xa, ya] = A.coords();
-    const [xb, yb] = B.coords();
-    return Math.sqrt((xa - xb)*(xa - xb) + (ya - yb)*(ya - yb));
-}
-
-function hdist(A, B) {
-    const u = A.to_complex();
-    const v = B.to_complex();
-    return Math.acosh(1 + (2 * u.sub(v).norm2()) / ((1 - u.norm2()) * (1 - v.norm2())));
-}
-
-function cosPhi(A, B, C) {
-    const u = A.to_complex();
-    const v = B.to_complex();
-    const w = C.to_complex();
-    const a = u.sub(v);
-    const b = w.sub(v);
-    return Complex.scalprod(a, b) / (a.norm() * b.norm());
-}
-
-// point X between P and Q such that hdist(P, X) : hdist(X, Q) = r
-function ratio(P, Q, r, redraw) {
-    //    if (r.value() == 1)
-    //        return midpoint(P, Q);
-
-    function fun(P, Q, r) {
-        const v = dist(P.to_complex(), Q.to_complex());
-        const [px, py] = P.coords();
-        const [qx, qy] = Q.coords();
-        const cx = (qx-r*r*px)/(1-r*r);
-        const cy = (qy-r*r*py)/(1-r*r);
-        const rr = v * r / Math.abs(1 - r*r);
-        return [cx, cy, rr];
-    }
-    
-    const C1 = DG.pointFun((P, Q, r) => {
-        const [cx, cy, rr] = fun(P, Q, r);
-        return new CP1(new Complex(cx, cy));
-    }, [P, Q, r], NO_REDRAW).hide(NO_REDRAW);
-    const C2 = DG.pointFun((P, Q, r) => {
-        const [cx, cy, rr] = fun(P, Q, r);
-        return new CP1(new Complex(cx+rr, cy));
-    }, [P, Q, r], NO_REDRAW).hide(NO_REDRAW);
-    const k = DG.circle(C1, C2, NO_REDRAW).hide(NO_REDRAW);
-    const h = line(P, Q, NO_REDRAW).hide(NO_REDRAW);
-    return DG.intersectCC_select(h, k, p => Circline.h_between(P, p, Q), redraw);
-}
-
-function on_line_hdist(l, A, d, cond, redraw) {
-    const c = DG.poincareCircleR(A, d, NO_REDRAW).hide(NO_REDRAW);
-    if (cond === undefined)
-        return DG.intersectCC_both(l, c, redraw);
-    else
-        return DG.intersectCC_select(l, c, cond, redraw);
-}
-
-function w28(A, B, G, redraw)
-{
-    const Mc = midpoint(A, B, NO_REDRAW).hide(NO_REDRAW);
-    const h = line(Mc, G, NO_REDRAW).hide(NO_REDRAW);
-    const s = DG.num((A, B, G, Mc) => 2 * Math.cosh(hdist(A, B)/2) * Math.sinh(hdist(G, Mc)), [A, B, G, Mc]);
-    const r = DG.num(s => Math.asinh(s), [s]);
-    // point C on line h such that sinh(hdist(C, G)) = s and h_between(C, G, Mc)
-    const C = on_line_hdist(h, G, r, p => Circline.h_between(p, G, Mc), redraw);
-    return C;
-}
-
-function w29(h, C, G, Mc, redraw) {
-    const s = DG.num((C, G, Mc) => Math.sinh(hdist(C, G)) / (2 * Math.sinh(hdist(G, Mc))), [C, G, Mc]);
-    const r = DG.num(s => Math.acosh(s), [s]);
-    // points A and B on line h such that cosh(d(Mc, A)) = cosh(d(Mc, B)) = s
-    const [A, B] = on_line_hdist(h, Mc, r, redraw);
-    return [A, B];
-}
-
-function w30(G, O, Mc, redraw) {
-    const s = DG.num((G, O, Mc) => (Math.cosh(hdist(O, Mc)))/(2*Math.cosh(hdist(G, O))*Math.sinh(hdist(G, Mc))) - Math.tanh(hdist(G, O)) * cosPhi(Mc, G, O), [G, O, Mc]);
-    const r = DG.num(s => Math.atanh(1/s), [s]);
-    const h = line(Mc, G, NO_REDRAW).hide(NO_REDRAW);
-    const C = on_line_hdist(h, G, r, p => Circline.h_between(p, G, Mc), redraw);
-    return C;
-}
-
-
-function w31(G, O, C, redraw) {
-    const s = DG.num((G, O, C) => (2*Math.cosh(hdist(C, O)) / (Math.cosh(hdist(G, O))*Math.sinh(hdist(C, G)))) - Math.tanh(hdist(G, O)) * cosPhi(C, G, O), [G, O, C]);
-    const r = DG.num(s => Math.atanh(1/s), [s]);
-    const h = line(C, G, NO_REDRAW).hide(NO_REDRAW);
-    const Mc = on_line_hdist(h, G, r, p => Circline.h_between(C, G, p), redraw);
-    return Mc;
-}
-
 function triangle(A, B, C) {
     const elements = [A, B, C];
     // sides
@@ -408,9 +315,6 @@ export {
     tangents,
     other_tangent,
     
-    
-    ratio,
-    w28, w29, w30, w31,
     
     triangle,
     
