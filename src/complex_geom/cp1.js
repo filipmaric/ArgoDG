@@ -5,16 +5,27 @@ import { Complex } from './complex.js';
  * given by its complex homogeneous coordinates
  */
 class CP1 {
-    constructor(z1, z2) {
+    constructor(z1, z2, normalize) {
         if (!z2)
             z2 = Complex.one;
         this.z1 = z1;
         this.z2 = z2;
+        if (normalize === undefined || normalize)
+            this.normalize();
+    }
+
+    normalize() {
         if (!this.z2.is_zero()) {
-            const norm = this.z2.norm();
-            this.z1 = this.z1.scale(1/norm);
-            this.z2 = this.z2.scale(1/norm);
+            this.z1 = this.z1.div(this.z2);
+            this.z2 = Complex.one;
+        } else if (!this.z1.is_zero()) {
+            this.z1 = Complex.one;
+            this.z2 = Complex.zero;
         }
+    }
+
+    is_valid(eps) {
+        return !this.z1.is_zero(eps) || !this.z2.is_zero(eps);
     }
 
     is_zero(eps) {
@@ -78,8 +89,8 @@ class CP1 {
 
     mult(other) {
         if ((this.z1.is_zero() && other.z2.is_zero()) ||
-            (other.z1.is_zero() && this.z2.is_zero))
-            return CP1.one();
+            (other.z1.is_zero() && this.z2.is_zero()))
+            return CP1.one;
         else
             return new CP1(this.z1.mult(other.z1), this.z2.mult(other.z2));
     }
@@ -92,18 +103,26 @@ class CP1 {
         return this.mult(other.reciprocal());
     }
 
-    conjugate() {
+    cnj() {
         return new CP1(this.z1.cnj(), this.z2.cnj());
     }
 
     inversion() {
-        return this.reciprocal().conjugate();
+        return this.reciprocal().cnj();
     }
 
-    eq(other) {
+    eq(other, eps) {
         if (!(other instanceof CP1))
             other = other.cp1();
-        return this.sub(other).is_zero();
+
+        this.normalize();
+        other.normalize();
+        
+        if (this.is_inf())
+            return other.is_inf();
+        if (other.is_inf())
+            return this.is_inf();
+        return this.sub(other).is_zero(eps);
     }
 
     clone() {
@@ -122,7 +141,7 @@ class CP1 {
         if (!n1.mult(n2).is_zero() || !d1.mult(d2).is_zero())
             return new CP1(n1.mult(n2), d1.mult(d2));
         else
-            return CP1.one();
+            return CP1.one;
     }
 
     vec_mult(other) {
@@ -134,4 +153,8 @@ const inf  = new CP1(Complex.one, Complex.zero);
 const zero = CP1.of_real(0);
 const one  = CP1.of_real(1);
 
+Complex.prototype.cp1 = function() {
+    return CP1.of_complex(this);
+}
+      
 export { CP1 };

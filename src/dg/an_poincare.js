@@ -49,16 +49,16 @@ function ratio(P, Q, r, redraw) {
     const X = DG.intersectCC_select(h, k, p => Circline.h_between(P, p, Q), NO_REDRAW).hide(NO_REDRAW);
     const M = RCP.midpoint(P, Q, NO_REDRAW).hide(NO_REDRAW);
     const res = DG.If(r => r != 1, X, M, [r]);
-    res.descriptions("Point X between " + P.label() + " and " + Q.label() + " determined by ratio").show(true, redraw);
+    res.descriptions("Point X between " + P.label() + " and " + Q.label() + " determined by ratio").show(redraw);
     return res;
 }
 
-function on_line_hdist(l, A, d, cond, redraw) {
+function on_line_hdist(l, A, d, cond) {
     const c = DG.poincareCircleR(A, d, NO_REDRAW).hide(NO_REDRAW);
     if (cond === undefined)
-        return DG.intersectCC_both(l, c, redraw);
+        return DG.intersectCC_both(l, c);
     else
-        return DG.intersectCC_select(l, c, cond, redraw);
+        return DG.intersectCC_select(l, c, cond);
 }
 
 function C_from_ABG(A, B, G, redraw)
@@ -68,7 +68,7 @@ function C_from_ABG(A, B, G, redraw)
     const s = DG.num((A, B, G, Mc) => 2 * Math.cosh(hdist(A, B)/2) * Math.sinh(hdist(G, Mc)), [A, B, G, Mc]);
     const r = DG.num(s => Math.asinh(s), [s]);
     // point C on line mc such that sinh(hdist(C, G)) = s and h_between(C, G, Mc)
-    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc), NO_REDRAW);
+    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc));
     C.description("Calculated from centroid " + G.label() + " and vertices " + A.label() + " and " + B.label(), redraw)
     return C;
 }
@@ -77,8 +77,10 @@ function AB_from_cCGMc(c, C, G, Mc, redraw) {
     const s = DG.num((C, G, Mc) => Math.sinh(hdist(C, G)) / (2 * Math.sinh(hdist(G, Mc))), [C, G, Mc]);
     const r = DG.num(s => Math.acosh(s), [s]);
     // points A and B on line c such that cosh(d(Mc, A)) = cosh(d(Mc, B)) = s
-    const [A, B] = on_line_hdist(c, Mc, r, NO_REDRAW)
-    [A, B].forEacah(obj => obj.description("Calculated from centroid " + G.label() + " and midpoint " + Mc.label(), redraw));
+    const [A, B] = on_line_hdist(c, Mc, r)
+    const desc = "Calculated from centroid " + G.label() + " and midpoint " + Mc.label();
+    A.description(desc, NO_REDRAW);
+    B.description(desc, redraw);
     return [A, B];
 }
 
@@ -86,7 +88,7 @@ function C_from_GOMc(G, O, Mc, redraw) {
     const s = DG.num((G, O, Mc) => (Math.cosh(hdist(O, Mc)))/(2*Math.cosh(hdist(G, O))*Math.sinh(hdist(G, Mc))) - Math.tanh(hdist(G, O)) * cosPhi(Mc, G, O), [G, O, Mc]);
     const r = DG.num(s => Math.atanh(1/s), [s]);
     const mc = RCP.line(Mc, G, NO_REDRAW).hide(NO_REDRAW);
-    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc), NO_REDRAW);
+    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc));
     C.description("Calcluated from centroid " + G.label() + ", circumcenter " + O.label() + ", and midpoint " + Mc.label(), redraw);
     return C;
 }
@@ -96,7 +98,7 @@ function Mc_from_GOC(G, O, C, redraw) {
     const s = DG.num((G, O, C) => (2*Math.cosh(hdist(C, O)) / (Math.cosh(hdist(G, O))*Math.sinh(hdist(C, G)))) - Math.tanh(hdist(G, O)) * cosPhi(C, G, O), [G, O, C]);
     const r = DG.num(s => Math.atanh(1/s), [s]);
     const mc = RCP.line(C, G, NO_REDRAW).hide(NO_REDRAW);
-    const Mc = on_line_hdist(mc, G, r, p => Circline.h_between(C, G, p), NO_REDRAW);
+    const Mc = on_line_hdist(mc, G, r, p => Circline.h_between(C, G, p));
     Mc.description("Calcluated from centroid " + G.label() + ", circumcenter " + O.label() + ", and vertex " + C.label(), redraw);
     return Mc;
 }

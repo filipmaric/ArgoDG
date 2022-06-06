@@ -1,6 +1,7 @@
 import { Complex } from './complex.js';
 import { ComplexMatrix2x2 } from './complex_matrix.js';
 import { Circline } from './circline.js';
+import { CP1 } from './cp1.js';
 
 /**
  * Moebius transform (az + b) / (cz + d) acting on points of CP1
@@ -32,14 +33,14 @@ class Moebius {
     }
 
     moebius_pt(z) {
-        if (z instanceof Complex)
-            z = CP1.of_complex(z);
+        if (!(z instanceof CP1))
+            z = z.cp1();
         return this.M.multCP1(z);
     }
 
     moebius_inv_pt(z) {
-        if (z instanceof Complex)
-            z = CP1.of_complex(z);
+        if (!(z instanceof CP1))
+            z = z.cp1();
         return this.M.multInvCP1(z);
     }
 

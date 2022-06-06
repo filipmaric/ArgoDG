@@ -15,6 +15,14 @@ class Complex {
         return new Complex(0, im);
     }
 
+    static of_xy(x, y) {
+        return new Complex(x, y);
+    }
+
+    static of_polar(rho, theta) {
+        return new Complex(rho * Math.cos(theta), rho * Math.sin(theta));
+    }
+
     // some special complex numbers
     
     static get zero() {
@@ -48,8 +56,16 @@ class Complex {
         return this._re;
     }
 
+    x() {
+        return this.re();
+    }
+
     im() {
         return this._im;
+    }
+
+    y() {
+        return this.im();
     }
     
     coords() {
@@ -83,7 +99,7 @@ class Complex {
         if (!eps)
             eps = Complex.EPS;
         
-        return Math.abs(this.re()) < Complex.EPS;
+        return Math.abs(this.re()) < eps;
     }
 
     // all complex numbers are finite
@@ -95,7 +111,6 @@ class Complex {
     to_complex() {
         return this;
     }
-
 
     // Arithmetic operations
 
@@ -117,7 +132,7 @@ class Complex {
     // multiplication
     mult(other) {
         if (typeof other == "number")
-            return this.scale(number);
+            return this.scale(other);
         return new Complex(this.re() * other.re() - this.im() * other.im(),
                            this.re() * other.im() + this.im() * other.re());
     }
@@ -129,7 +144,7 @@ class Complex {
     
     // division
     div(other) {
-        return this.mult(other.recip());
+        return this.mult(other.reciprocal());
     }
 
 
@@ -159,7 +174,7 @@ class Complex {
     }
 
     // reciprocal (z -> 1/z)
-    recip() {
+    reciprocal() {
         return this.cnj().scale(1 / this.norm2())
     }
 

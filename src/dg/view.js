@@ -309,8 +309,8 @@ class ListView {
             tr.append(td2);
             td2.innerHTML = obj.description();
 
-            tr.addEventListener("mouseenter", () => { obj.highlight(true); });
-            tr.addEventListener("mouseleave", () => { obj.highlight(false); });
+            tr.addEventListener("mouseenter", () => { obj.highlightOn(); });
+            tr.addEventListener("mouseleave", () => { obj.highlightOff(); });
             td1.addEventListener("click", (e) => {
                 const input = document.createElement("input");
                 input.type = "text";

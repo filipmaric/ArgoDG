@@ -5,9 +5,11 @@ import { REDRAW, NO_REDRAW } from './objects.js';
 const unit_circle = Circline.unit_circle();
 const in_disc = p => unit_circle.in_disc(p);
 const absolute = (function() {
-    const O = DG.point(0, 0).hide(false);
-    const X = DG.point(0, 1).hide(false);
-    return DG.circle(O, X);
+    const O = DG.point(0, 0).hide(NO_REDRAW);
+    const X = DG.point(0, 1).hide(NO_REDRAW);
+    const abs = DG.circle(O, X, NO_REDRAW).label("abs");
+    abs.description("absolute", REDRAW);
+    return abs;
 })();
 
 
@@ -108,7 +110,7 @@ function reflectP(O, B, redraw) {
     const c = circle(O, B, NO_REDRAW).hide(NO_REDRAW);
     const BB = intersectLC_other(l, c, B, NO_REDRAW).hide(NO_REDRAW);
     const r = DG.If((O, B) => O.eq(B), DG.clone(B, NO_REDRAW).hide(NO_REDRAW), BB, [O, B]);
-    r.description("Reflect point " + B.label() + " over point " + O.label(), redraw);
+    r.description("Reflect point " + B.label() + " about point " + O.label(), redraw);
     return r;
 }
 
@@ -119,7 +121,7 @@ function reflectL(l, A, redraw) {
     const c = circle(M, A, NO_REDRAW).hide(NO_REDRAW);
     const AA = intersectLC_other(p, c, A, NO_REDRAW).hide(NO_REDRAW);
     const r = DG.If((A, M) => A.eq(M), DG.clone(A, NO_REDRAW).hide(NO_REDRAW), AA, [A, M]);
-    r.description("Reflect point " + A.label() + " over line " + l.label(), redraw);
+    r.description("Reflect point " + A.label() + " about line " + l.label(), redraw);
     return r;
 }
 
@@ -130,7 +132,7 @@ function reflectP_line(O, l, redraw) {
     var B1p = reflectP(O, B1, NO_REDRAW).hide(NO_REDRAW);
     var B2p = reflectP(O, B2, NO_REDRAW).hide(NO_REDRAW);
     var lp = line(B1p, B2p, NO_REDRAW);
-    lp.description("Reflect " + l.label() + " over line " + l.label(), redraw);
+    lp.description("Reflect line " + l.label() + " about point " + O.label(), redraw);
     return lp;
 }
 

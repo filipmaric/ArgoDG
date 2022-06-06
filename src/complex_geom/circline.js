@@ -18,6 +18,7 @@ class Circline {
             }
             this.H = new ComplexMatrix2x2(A, B, C, D);
         }
+        this.normalize();
     }
 
     // Circline that represents an Euclidean circle with center in a (finite) complex number a
@@ -99,103 +100,99 @@ class Circline {
         const z2 = z1.add(Complex.i.mult((this.H.B.arg() > 0 ? this.H.B.uminus() : this.H.B).sgn()));
         return [z1, z2];
     }
+
+    // precision for checking in/on/out
+    static EPS = 1e-12;
+
+    quad_form(z) {
+        if (!(z instanceof CP1))
+            z = z.cp1();
+
+        return z.cnj().vec_mult(this.H.multCP1(z, false)).re();
+    }
     
     // checks if the given CP1 point lies on this circline (precision can be changed)
     on_circline(z, eps) {
         if (!eps)
-            eps = 1e-2;
-        return (z.conjugate().vec_mult(this.H.multCP1(z))).is_zero(eps);
+            eps = Circline.EPS;
+        return Math.abs(this.quad_form(z)) < eps;
     }
 
     // checks if the given CP1 point lines within the disc surounded by this circline (precision
     // can be changed)
     in_disc(z, eps) {
         if (!eps)
-            eps = 1e-12;
-        const v = z.conjugate().vec_mult(this.H.multCP1(z));
-        return v.re() < -eps;
+            eps = Circline.EPS;
+        return this.quad_form(z) < -eps;
     }
 
-
-    // check if z1 and z2 lie on the same arc determined by w1 and w2 (i.e., if z2 is on the
-    // same arc as z1 between w1 and w2, on the circline determined by w1, z1 and w2)
-    // w1, z1, w2, z2 are either all CP1 elements, or can be converted to those by means of
-    // cp1 method
-    static same_arc(w1, z1, w2, z2) {
+    static cross_ratio(w1, z1, w2, z2) {
         if (!(z1 instanceof CP1)) z1 = z1.cp1();
         if (!(w1 instanceof CP1)) w1 = w1.cp1();
         if (!(z2 instanceof CP1)) z2 = z2.cp1();
         if (!(w2 instanceof CP1)) w2 = w2.cp1();
-        const cr = CP1.cross_ratio(w1, z1, w2, z2);
-        return !cr.is_inf() && cr.to_complex().is_real() && cr.to_complex().re() >= 0;
-    }
-
-    // check if z1 and z2 lie different arcs determined by w1 and w2 (i.e., if z2 is on the
-    // on the circline determined by w1, z1 and w2, but not on the same arc between w1 and w2
-    // as z1)
-    // w1, z1, w2, z2 are either all CP1 elements, or can be converted to those by means of
-    // cp1 method
-    static other_arc(w1, z1, w2, z2) {
-        if (!(z1 instanceof CP1)) z1 = z1.cp1();
-        if (!(w1 instanceof CP1)) w1 = w1.cp1();
-        if (!(z2 instanceof CP1)) z2 = z2.cp1();
-        if (!(w2 instanceof CP1)) w2 = w2.cp1();
-
-        const cr = CP1.cross_ratio(w1, z1, w2, z2);
-        return !cr.is_inf() && cr.to_complex().is_real() && cr.to_complex().re() < 0;
+        return CP1.cross_ratio(w1, z1, w2, z2);
     }
 
     // check if w1, z1, w2, and z2 all lie on the same circline
     // w1, z1, w2, z2 are either all CP1 elements, or can be converted to those by means of
     // cp1 method
-    static same_circline(w1, z1, w2, z2) {
-        if (!(z1 instanceof CP1)) z1 = z1.cp1();
-        if (!(w1 instanceof CP1)) w1 = w1.cp1();
-        if (!(z2 instanceof CP1)) z2 = z2.cp1();
-        if (!(w2 instanceof CP1)) w2 = w2.cp1();
-        const cr = CP1.cross_ratio(w1, z1, w2, z2);
-        return cr.is_inf() || cr.to_complex().is_real();
+    static same_circline(w1, z1, w2, z2, eps) {
+        if (!eps)
+            eps = Circline.EPS;
+        const cr = Circline.cross_ratio(w1, z1, w2, z2);
+        return cr.is_inf() || cr.to_complex().is_real(eps);
+    }
+
+    // check if z1 and z2 lie on the same arc determined by w1 and w2 (i.e., if z2 is on the
+    // same arc as z1 between w1 and w2, on the circline determined by w1, z1 and w2)
+    // w1, z1, w2, z2 are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
+    static same_arc(w1, z1, w2, z2, eps) {
+        if (!eps)
+            eps = Circline.EPS;
+        const cr = Circline.cross_ratio(w1, z1, w2, z2);
+        return !cr.is_inf() && cr.to_complex().is_real(eps) && cr.to_complex().re() >= eps;
+    }
+    
+    // check if z1 and z2 lie different arcs determined by w1 and w2 (i.e., if z2 is on the
+    // on the circline determined by w1, z1 and w2, but not on the same arc between w1 and w2
+    // as z1)
+    // w1, z1, w2, z2 are either all CP1 elements, or can be converted to those by means of
+    // cp1 method
+    static other_arc(w1, z1, w2, z2, eps) {
+        if (!eps)
+            eps = Circline.EPS;
+        const cr = Circline.cross_ratio(w1, z1, w2, z2);
+        return !cr.is_inf() && cr.to_complex().is_real(eps) && cr.to_complex().re() < -eps;
     }
 
     // check if w is between z1 and z2 (in Euclidean sense)
     // w, z1, z2 are either all CP1 elements, or can be converted to those by means of
     // cp1 method
-    static between(z1, w, z2) {
-        if (!(z1 instanceof CP1)) z1 = z1.cp1();
-        if (!(w  instanceof CP1)) w  = w.cp1();
-        if (!(z2 instanceof CP1)) z2 = z2.cp1();
-        return Circline.other_arc(CP1.inf, z1, w, z2);
+    static between(z1, w, z2, eps) {
+        return Circline.other_arc(CP1.inf, z1, w, z2, eps);
     }
 
     // check if z1, z2, and z3 are collinear (in Euclidean sense)
     // z1, z2, z3 are either all CP1 elements, or can be converted to those by means of
     // cp1 method
-    static collinear(z1, z2, z3) {
-        if (!(z1 instanceof CP1)) z1 = z1.cp1();
-        if (!(z2 instanceof CP1)) z2 = z2.cp1();
-        if (!(z3 instanceof CP1)) z3 = z3.cp1();
-        return Circline.same_circline(z1, z2, z3, CP1.inf);
+    static collinear(z1, z2, z3, eps) {
+        return Circline.same_circline(z1, z2, z3, CP1.inf, eps);
     }
 
     // check if w1 and w2 are on the same side of z (on the same Euclidean half-line)
     // w1, w2, z are either all CP1 elements, or can be converted to those by means of
     // cp1 method
-    static same_side(w1, w2, z) {
-        if (!(w1 instanceof CP1)) w1 = w1.cp1();
-        if (!(w2 instanceof CP1)) w2 = w2.cp1();
-        if (!(z  instanceof CP1)) z  = z.cp1();
-        return Circline.collinear(w1, w2, z) && !Circline.between(w1, z, w2);
+    static same_side(w1, w2, z, eps) {
+        return Circline.collinear(w1, w2, z, eps) && !Circline.between(w1, z, w2, eps);
     }
 
     // check if w is h-betwen z1 and z2 on the Poincare line joining z1 and z2 within the unit disc
     // z1, w, z2 are either all CP1 elements, or can be converted to those by means of
     // cp1 method
-    static h_between(z1, w, z2) {
-        if (!(z1 instanceof CP1)) z1 = z1.cp1();
-        if (!(w  instanceof CP1)) w  = w.cp1();
-        if (!(z2 instanceof CP1)) z2 = z2.cp1();
-
-        return unit_circle.in_disc(w) && Circline.other_arc(w, z1, w.inversion(), z2) 
+    static h_between(z1, w, z2, eps) {
+        return unit_circle.in_disc(w, eps) && Circline.other_arc(w, z1, w.inversion(), z2, eps) 
     }
 
     // random three different points on this circline
@@ -257,17 +254,17 @@ class Circline {
     }
 
     // Moebius transformation that maps this circline to x-axis
-    moebius_to_xaxis() {
-        if (!this._moebius_to_xaxis) {
+    moebius_to_x_axis() {
+        if (!this._moebius_to_x_axis) {
             const [z1, z2, z3] = this.three_points().map(p => CP1.of_complex(p));
-            this._moebius_to_xaxis = Moebius.moebius_01inf(z1, z2, z3);
+            this._moebius_to_x_axis = Moebius.moebius_01inf(z1, z2, z3);
         }
-        return this._moebius_to_xaxis;
+        return this._moebius_to_x_axis;
     }
 
     // intersection of this and other circline (fictive intersections can also be returned)
     intersect(other, includeFictive) {
-        const M = this.moebius_to_xaxis();
+        const M = this.moebius_to_x_axis();
         const cm = M.moebius_circline(other);
         const [A, B, D] = [cm.H.A, cm.H.B, cm.H.D];
         let p1, p2;
@@ -312,15 +309,17 @@ class Circline {
 
     // convert the H matrix to canonical form (used for easy circline comparison)
     // A is set to 1 if possible,
-    // otherwise D is set to 1 if possible,
-    // otherwise B is set to 1
+    // otherwise B is set to unit modulus and nonegative argument
+    // WARNING: this can change orientation
     normalize() {
         if (!this.H.A.is_zero()) {
-            this.H = this.H.multC(this.H.A.recip());
-        } else if (!this.H.D.is_zero()) {
-            this.H = this.H.multC(this.H.D.recip());
+            this.H = this.H.multC(this.H.A.reciprocal());
         } else {
-            this.H = this.H.multC(this.H.B.recip());
+            const arg = this.H.B.arg();
+            if (0 <= arg && arg < Math.PI)
+                this.H = this.H.multC(1 / this.H.B.norm());
+            else
+                this.H = this.H.multC(- 1 / this.H.B.norm());
         }
     }
 

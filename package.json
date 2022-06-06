@@ -7,12 +7,20 @@
     "url": "https://github.com/filipmaric/ArgoDG.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest ./test"
+  },
+  "jest": {
+      "testEnvironment": "jsdom",
+      "setupFiles": [ "jest-canvas-mock" ]
   },
   "keywords": [],
   "author": "Filip Marić (filip@matf.bg.ac.rs)",
   "license": "ISC",
   "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.18.2",
+    "jest": "^28.1.0",
+    "jest-canvas-mock": "^2.4.0",
+    "jest-environment-jsdom": "^28.1.0",
     "webpack": "^5.72.0",
     "webpack-cli": "^4.9.2"
   }

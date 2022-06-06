@@ -27,7 +27,7 @@ class DGObject {
         this._style = {};
 
         // no object is highlighted by default
-        this._style._highlight = false;
+        this._style._isHighlighted = false;
 
         // each object can be a part of one or more constructions
         this._constructions = [];
@@ -74,26 +74,58 @@ class DGObject {
             construction.draw();
         });
     }
-    
-    // set if this object should be visible
-    show(yes, redraw) {
-        if (yes == undefined)
-            yes = true;
-        this._style._hide = !yes;
+
+    // get or set whole style subobject
+    getStyle() {
+        return this._style;
+    }
+
+    setStyle(style, redraw) {
+        this._style = style;
         if (redraw === undefined || redraw)
             this.fireChangeEvent();
+    }
+
+    style(style, redraw) {
+        if (style === undefined)
+            return this.getStyle();
+        this.setStyle(style, redraw);
+        return this;
+    }
+
+    getProperty(prop, defaultValue) {
+        return this._style[prop] !== undefined ? this._style[prop] : defaultValue;
+    }
+
+    setProperty(prop, value, redraw) {
+        if (this._style[prop] === value)
+            return;
+        
+        this._style[prop] = value;
+        if (redraw === undefined || redraw)
+            this.fireChangeEvent();
+    }
+
+    // set object visibility
+    setVisibility(visible, redraw) {
+        this.setProperty("_hide", !visible, redraw);
+    }
+    
+    // set that this object should be visible
+    show(redraw) {
+        this.setVisibility(true, redraw);
         return this;
     }
 
     // set that this object should not be visible
     hide(redraw) {
-        this.show(false, redraw);
+        this.setVisibility(false, redraw);
         return this;
     }
 
     // check if the object is hidden (not visible)
     hidden() {
-        return this._style._hide;
+        return this.getProperty("_hide");
     }
 
     // check if the object is visible (not hidden)
@@ -102,85 +134,104 @@ class DGObject {
     }
 
     // get or set the color of the object
+    getColor() {
+        // return color that has been set or black otherwise
+        return this.getProperty("_color", "black");
+    }
+
+    setColor(c, redraw) {
+        this.setProperty("_color", c, redraw);
+    }
+
     color(c, redraw) {
         // if c is undefined get the color
         if (c === undefined)
-            // return color that has been set or black otherwise
-            return this._style._color ? this._style._color : "black";
+            return this.getColor();
 
         // otherwise set the color
-        this._style._color = c;
+        this.setColor(c, redraw);        
+        return this;
+    }
 
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
+    // get or set opacity of the object
+    getOpacity() {
+        return getOpacity(this.color());
+    }
+
+    setOpacity(o, redraw) {
+        this.color(setOpacity(this.color(), o), redraw);
+    }
+
+    opacity(o, redraw) {
+        // o is undefined get the opacity
+        if (o === undefined)
+            return this.getOpacity();
+
+        // otherwise set the opacity
+        this.setOpacity(o, redraw);
+        return this;
+    }
+
+    // get or set the size of the object (for drawing points)
+    getSize() {
+        // return size that has been set or 1 if it is undefined
+        return this.getProperty("_size", 1);
+    }
+
+    setSize(s, redraw) {
+        this.setProperty("_size", s, redraw);
+    }
+    
+    size(s, redraw) {
+        // if s is undefined get the size
+        if (s === undefined)
+            return this.getSize();
+
+        // otherwise set the size
+        this.setSize(s, redraw);
         return this;
     }
 
     // get or set the line width of the object
+    getWidth() {
+        // return width that has been set or 1 if it is undefined
+        return this.getProperty("_width", 1);
+    }
+
+    setWidth(w, redraw) {
+        this.setProperty("_width", w, redraw);
+    }
+    
     width(w, redraw) {
         // w is undefined get the width
         if (w === undefined)
-            // return width that has been set or 1 if it is undefined
-            return this._style._width ? this._style._width : 1;
+            return this.getWidth();
 
         // otherwise set the width
-        this._style._width = w;
-        
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
+        this.setWidth(w, redraw);
         return this;
     }
 
+
     // set dashed pattern
     dashed(redraw) {
-        this._style._dash = [8, 4];
-        
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
+        this.setProperty("_dash", [8, 4], redraw);
         return this;
     }
 
     // set solid line
     solid(redraw) {
-        this._style._dash = [];
-        
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
+        this.setProperty("_dash", [], redraw);
         return this;
     }
 
     // get the dash pattern
     dash() {
-        return this._style._dash ? this._style._dash : [];
+        return this.getProperty("_dash", []);
     }
 
-    // get or set opacity of the object
-    opacity(o, redraw) {
-        // o is undefined get the opacity
-        if (o === undefined)
-            return getOpacity(this.color());
-        
-        // otherwise set the opacity
-        this.color(setOpacity(this.color(), o));
-        
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
-        return this;
-    }
-
-    // get or set the size of the object (for drawing points)
-    size(s, redraw) {
-        // if s is undefined get the size
-        if (s === undefined)
-            // return size that has been set or 1 if it is undefined
-            return this._style._size ? this._style._size : 1;
-
-        // otherwise set the size
-        this._style._size = s;
-
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
-        return this;
+    isDashed() {
+        return this.dash().length > 0;
     }
 
     // default label for the object (if label is not set)
@@ -188,76 +239,84 @@ class DGObject {
         return this.type() + "(" + this._ID + ")";
     }
 
-    // default description for the object (if description is not set)
-    defaultDescription() {
-        return "";
+    // get/set the label of the object
+    getLabel() {
+        // if the label is not set, get the default label
+        return this.getProperty("_label", this.defaultLabel());
     }
 
-    // get/set the label of the object
-    label(str, redraw, show) {
+    setLabel(str, redraw) {
+        this.setProperty("_label", str, redraw);
+    }
+    
+    label(str, redraw) {
         // str is undefined get the label
-        if (str === undefined) {
-            if (this._style._label)
-                return this._style._label;
-            // label is not set - get the default label
-            return this.defaultLabel();
-        }
+        if (str === undefined)
+            return this.getLabel();
         
         // otherwise set the label
-        this._style._label = str;
-
-        // label should be shown unless showing it explicitly turned off
-        this._style._showing_label = show == undefined || show;
-
-        // change (redraw) event is fired unless that is explicitly turned off
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
+        this.setLabel(str, redraw);
         return this;
     }
 
     // does this object have a non-generic label
     hasLabel() {
-        return this._style._label !== undefined;
+        return this.getProperty("_label") !== undefined;
+    }
+
+    // set or get label visibility
+    setLabelVisibility(visible, redraw) {
+        this.setProperty("_label_visible", visible, redraw);
+    }
+    
+    showLabel(redraw) {
+        this.setLabelVisibility(true, redraw);
+        return this;
+    }
+
+    hideLabel(redraw) {
+        this.setLabelVisibility(false, redraw);
+        return this;
     }
 
     // check if the label should be shown
     showingLabel() {
-        return this._style._showing_label;
+        return this.getProperty("_label_visible", true);
     }
 
-    hideLabel(redraw) {
-        this._style._showing_label = false;
-        // change (redraw) event is fired unless that is explicitly turned off
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
-        return this;
+    // default description for the object (if description is not set)
+    defaultDescription() {
+        return "";
     }
 
     // get or set the description
+    getDescription() {
+        // if the description is not set - get the default description
+        return this.getProperty("_description", this.defaultDescription());
+    }
+
+    hasDescription() {
+        return this.getProperty("_description") !== undefined;
+    }
+
+    setDescription(desc, redraw) {
+        this.setProperty("_description", desc, redraw);
+    }
+
     description(desc, redraw) {
-        if (desc != undefined) {
-            // if description is given, set the description
-            this._style._description = desc;
-            
-            if (redraw === undefined || redraw)
-                this.fireChangeEvent();
-            return this;
+        if (desc === undefined) {
+            // description is not given, so get the description
+            return this.getDescription();
         } else {
-            // otherwise get the description
-            if (this._style._description)
-                return this._style._description;
-            // description is not set - get the default description
-            return this.defaultDescription();
+            // otherwise set the description
+            this.setDescription(desc, redraw);
+            return this;
         }
     }
 
     // append string to the existing description
     addDescription(desc, redraw) {
-        this._style._description += desc;
-        
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
-        return this;
+        this.setDescription(this._style._description + desc, redraw);
     }
 
     // returns a nice description for the object that might contain a label (if its given)
@@ -266,7 +325,7 @@ class DGObject {
         let result;
         if (this.hasLabel()) {
             result = this.label();
-            if (this.description())
+            if (this.hasDescription())
                 result += ": " + this.description();
             else
                 result = this.type() + " " + result;
@@ -280,29 +339,22 @@ class DGObject {
     }
 
     // get or set highlight (that shows that mouse is on the object) 
-    highlight(h, redraw) {
-        if (h === undefined)
-            return this._style._highlight ? this._style._highlight : false;
-
-        if (h != this._style._highlight) {
-            this._style._highlight = h;
-            if (redraw === undefined || redraw)
-                this.fireChangeEvent();
-        }
+    isHighlighted() {
+        return this.getProperty("_isHighlighted", false);
     }
 
-    // get or set the entire style object
-    style(st, redraw) {
-        if (st === undefined)
-            return this._style;
-        
-        this._style = st;
-        
-        // change (redraw) event is fired unless that is explicitly turned off
-        if (redraw === undefined || redraw)
-            this.fireChangeEvent();
+    setHighlight(highlight, redraw) {
+        this.setProperty("_isHighlighted", highlight, redraw);
+    }
+
+    highlightOn(redraw) {
+        this.setHighlight(true, redraw);
         return this;
-        
+    }
+
+    highlightOff(redraw) {
+        this.setHighlight(false, redraw);
+        return this;
     }
 
     // draw object on the given View
@@ -429,24 +481,93 @@ class DGClone extends DGObject {
 
     drawMe(view) {
         const old_style = this._object.style();
-        this._object.style(this._style, false);
+        this._object.style(this._style, NO_REDRAW);
         this._object.drawMe(view);
-        this._object.style(old_style, false);
+        this._object.style(old_style, NO_REDRAW);
     }
 
     drawLabel(view) {
         const old_style = this._object.style();
-        this._object.style(this._style, false);
+        this._object.style(this._style, NO_REDRAW);
         this._object.drawLabel(view);
-        this._object.style(old_style, false);
+        this._object.style(old_style, NO_REDRAW);
     }
 
     isPoint() {
         return this._object.isPoint();
     }
 
+    isFreePoint() {
+        return this._object.isFreePoint();
+    }
+
+    isLine() {
+        return this._object.isLine();
+    }
+
+    isCircle() {
+        return this._object.isCircle();
+    }
+    
     get(target, prop) {
-        return this[prop] || this._object[prop];
+        return this[prop] || this._object[prop].bind(this._object);
+    }
+}
+
+// "free" numeric constant whose value can be changed that can be used in numeric expressions
+class DGConst extends DGObject {
+    constructor(value) {
+        super();
+        this.setValue(value);
+    }
+
+    value() {
+        return this._value;
+    }
+
+    funArg() {
+        return this.value();
+    }
+
+    setValue(value, redraw) {
+        this._value = value;
+        // update all dependent objects
+        this.recalc();
+        
+        if (redraw == undefined || redraw)
+            this.fireChangeEvent();
+    }
+}
+
+// numeric expression that can depend on numeric constants, points (i.e., their coordinates) etc.
+class DGNum extends DGObject {
+    constructor(fun, dependencies) {
+        super();
+        this._fun = fun;
+        this._dependencies = dependencies;
+        
+        dependencies.forEach(obj => {
+            obj.addDependent(this);
+        });
+        this.recalcMe();
+        this.hide(false);
+    }
+
+    value() {
+        return this._value;
+    }
+    
+    funArg() {
+        return this.value();
+    }
+    
+    recalcMe() {
+        this._valid = this._dependencies.every(obj => obj.valid());
+        if (!this._valid)
+            return;
+        const args = this._dependencies.map(obj => obj.funArg());
+        this._value = this._fun(...args);
+        this._valid = isFinite(this._value);
     }
 }
 
@@ -477,7 +598,7 @@ class DGPoint extends DGObject {
     }
 
     // free the point so that it can be moved
-    free() {
+    unfix() {
         this._fixed = false;
         return this;
     }
@@ -505,20 +626,21 @@ class DGPoint extends DGObject {
     // trying to move the point to the given position
     // moving is not allowed if the target position does not satisfy
     // the validity check
-    moveTo(x, y) {
-        if (this._validity_check == undefined || this._validity_check(CP1.of_xy(x, y))) {
+    moveTo(x, y, redraw) {
+        const cp1 = CP1.of_xy(x, y);
+        if (this._validity_check == undefined || this._validity_check(cp1)) {
             // update the internal CP1 object
-            this._coords = new CP1(new Complex(x, y));
+            this._coords = cp1;
             this._valid = true; 
             // update all dependent objects
             this.recalc();
 
-            this.fireChangeEvent();
+            if (redraw == undefined || redraw)
+                this.fireChangeEvent();
             // the point was successfully moved
             return true;
         }
         // the point could not be moved
-        this._valid = false; 
         return false;
     }
 
@@ -558,13 +680,14 @@ class DGPoint extends DGObject {
         return this.cp1();
     }
 
-    // check equality of two points
+    // check equality of two points (other can represented by a complex number of cp1)
     eq(other) {
         if (other instanceof CP1)
             return this.cp1().eq(other);
-        if (other.isPoint()) {
+        if (other instanceof Complex)
+            return !this.is_inf() && this.to_complex().eq(other);
+        if (other.isPoint())
             return this.cp1().eq(other.cp1());
-        }
         return false;
     }
 
@@ -588,7 +711,7 @@ class DGPoint extends DGObject {
     // drawing the point on the given View
     drawMe(view) {
         if (!this.is_inf()) {
-            if (this.highlight()) {
+            if (this.isHighlighted()) {
                 view.point(this.x(), this.y(), {color: setOpacity(this.color(), 0.5*this.opacity()), size: 1.5*this.size()});
             }
             view.point(this.x(), this.y(), {color: this.color(), size: this.size()});
@@ -602,6 +725,46 @@ class DGPoint extends DGObject {
             view.text(this.x(), this.y(), this._style._label);
     }
 }
+
+
+// -----------------------------------------------------------------------------
+// functionally dependent point
+// -----------------------------------------------------------------------------
+
+class DGPointFun extends DGPoint {
+    constructor(fun, dependencies) {
+        super();
+        this._fun = fun;
+        this._dependencies = dependencies;
+        
+        dependencies.forEach(obj => {
+            obj.addDependent(this);
+        });
+        this.recalcMe();
+    }
+
+    // point is not free
+    isFreePoint() {
+        return false;
+    }
+    
+    recalcMe() {
+        this._valid = this._dependencies.every(obj => obj.valid());
+        if (!this._valid)
+            return;
+        
+        const args = this._dependencies.map(obj => obj.funArg());
+        const c = this._fun(...args);
+        if (c instanceof CP1)
+            this._coords = c;
+        else if (Array.isArray(c))
+            this._coords = new CP1(new Complex(c[0], c[1]));
+        else
+            this._coords = new CP1(c);
+    }
+}
+
+
 
 // -----------------------------------------------------------------------------
 // random point
@@ -641,73 +804,9 @@ class DGRandomPoint extends DGPoint {
         } while (!this._validity_check(this._coords) && i < MAX_ITER);
         if (i == MAX_ITER) {
             this._valid = false;
-            throw "Could not generate valid random point";
         } else
             this._valid = true;
     }
-}
-
-class DGPointFun extends DGPoint {
-    constructor(fun, dependencies) {
-        super();
-        this._fun = fun;
-        this._dependencies = dependencies;
-        
-        dependencies.forEach(obj => {
-            obj.addDependent(this);
-        });
-        this.recalcMe();
-    }
-
-    // point is not free
-    isFreePoint() {
-        return false;
-    }
-    
-    recalcMe() {
-        this._valid = this._dependencies.every(obj => obj.valid());
-        if (!this._valid)
-            return;
-        
-        const args = this._dependencies.map(obj => obj.funArg());
-        const c = this._fun(...args);
-        if (c instanceof CP1)
-            this._coords = c;
-        else
-            this._coords = new CP1(c);
-    }
-}
-
-class DGNum extends DGObject {
-    constructor(fun, dependencies) {
-        super();
-        this._fun = fun;
-        this._dependencies = dependencies;
-        
-        dependencies.forEach(obj => {
-            obj.addDependent(this);
-        });
-        this.recalcMe();
-        this.hide(false);
-    }
-
-    value() {
-        return this._value;
-    }
-    
-    funArg() {
-        return this.value();
-    }
-    
-    recalcMe() {
-        this._valid = this._dependencies.every(obj => obj.valid());
-        if (!this._valid)
-            return;
-        const args = this._dependencies.map(obj => obj.funArg());
-        this._value = this._fun(...args);
-        this._valid = isFinite(this._value);
-    }
-    
 }
 
 // -----------------------------------------------------------------------------
@@ -745,7 +844,7 @@ class DGCircline extends DGObject {
         };
         doDraw(this, style);
         
-        if (this.highlight()) {
+        if (this.isHighlighted()) {
             const style = {
                 color: setOpacity(this.color(), 0.5*getOpacity(this.color())),
                 width: 3*this.width(),
@@ -770,7 +869,7 @@ class DGCircline extends DGObject {
     isNear(x, y, worldToScreen) {
         if (!this.valid())
             return false;
-        return this._circline.transform(worldToScreen).on_circline(CP1.of_complex(new Complex(x, y)));
+        return this._circline.transform(worldToScreen).on_circline(CP1.of_xy(x, y));
     }
     
     // return internal representation (FIXME: this should be private)
@@ -875,6 +974,9 @@ class DGSegment extends DGLine {
 class DGRandomPointOnCircline extends DGPoint {
     constructor(l, params) {
         super();
+        if (params === undefined)
+            params = {};
+        
         this._line = l;
         this._validity_check = params.validity_check ? params.validity_check : p => true;
         this._disc = params.disc;
@@ -890,9 +992,9 @@ class DGRandomPointOnCircline extends DGPoint {
         return "point on circline";
     }
 
-    // point on circline is semi-free
+    // point on circline is not free
     isFreePoint() {
-        return !this._fixed;
+        return false;
     }
 
     // recalculate the coordinates
@@ -911,8 +1013,6 @@ class DGRandomPointOnCircline extends DGPoint {
         } while (!this._validity_check(this._coords) && iter < MAX_ITER);
         if (iter == MAX_ITER) {
             this._valid = false;
-            console.log(this._line.circline());
-            throw "Unable to generate valid random point";
         }
     }
 }
@@ -984,6 +1084,65 @@ class DGCircle extends DGCircline {
     // intersect two circles
     static intersectCC(c1, c2, includeFictive) {
         return c1.intersect(c2, includeFictive);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Circular arc
+// -----------------------------------------------------------------------------
+
+class DGArc extends DGCircline {
+    constructor(p1, p, p2) {
+        super();
+        this._p1 = p1;
+        this._p = p;
+        this._p2 = p2;
+        p1.addDependent(this);
+        p.addDependent(this);
+        p2.addDependent(this);
+        this.recalcMe();
+    }
+
+    type() {
+        return "arc";
+    }
+    
+    recalcMe() {
+        this._valid = this._p1.valid() && this._p.valid() && this._p2.valid();
+        if (!this._valid)
+            return;
+        this._circline = Circline.mk_circline3(this._p1, this._p, this._p2);
+    }
+
+    drawMe(view) {
+        function canonAngle(alpha) {
+            const k = Math.floor((alpha + Math.PI) / (2 * Math.PI));
+            let res = alpha - 2*k*Math.PI;
+            if (res < 0)
+                res += 2*Math.PI;
+            return res;
+        }
+        
+        function doDraw(cl, style) {
+            if (cl._circline.is_line()) {
+                const [x1, y1] = cl._p1.coords();
+                const [x, y] = cl._p.coords();
+                const [x2, y2] = cl._p2.coords();
+                if (Circline.between(cl._p1, cl._p, cl._p2))
+                    view.segment(x1, y1, x2, y2, style);
+                else
+                    view.segment_complement(x1, y1, x2, y2, style);
+            } else {
+                const c = cl._circline.circle_center();
+                const r = cl._circline.circle_radius();
+                const a1 = -cl._p1.cp1().to_complex().sub(c).arg();
+                const a = -cl._p.cp1().to_complex().sub(c).arg();
+                const a2 = -cl._p2.cp1().to_complex().sub(c).arg();
+                const [x, y] = c.coords();
+                view.arc(x, y, r, a1, a2, canonAngle(a2 - a1) < canonAngle(a - a1), style);
+            }
+        }
+        doDraw(this, {color: this.color(), width: this.width(), dash: this.dash()});
     }
 }
 
@@ -1230,7 +1389,6 @@ class DGIntersectPoint extends DGPoint {
         try {
             this._coords = this._intersections.selectPoint(this._selectionCriterion);
         } catch (err) {
-            console.log(err);
             this._valid = false;
         }
     }
@@ -1274,69 +1432,31 @@ class DGIf extends DGObject {
             return false;
         return this._object.isLine();
     }
+
+    getProperty(prop, defaultValue) {
+        return this._object.getProperty(prop, defaultValue);
+    }
+
+    setProperty(prop, value, redraw) {
+        this._thenObject.setProperty(prop, value, NO_REDRAW);
+        this._elseObject.setProperty(prop, value, redraw);
+    }
+
+    getStyle() {
+        return this._object.style();
+    }
+
+    setStyle(style, redraw) {
+        this._thenObject.setStyle(st, NO_REDRAW);
+        this._elseObject.setStyle(st, redraw);
+    }
+
+    fix() {
+        this._object.fix();
+    }
     
-    color(c) {
-        // if c is undefined get the color
-        if (c === undefined)
-            return this._object.color();
-        
-        // otherwise set the color
-        this._thenObject.color(c);
-        this._elseObject.color(c);
-        return this;
-    }
-
-    width(w) {
-        // if w is undefined get the width
-        if (w === undefined)
-            return this._object.width();
-
-        // otherwise set the width
-        this._thenObject.width(w);
-        this._elseObject.width(w);
-        return this;
-    }
-    
-    label(l, redraw, show_label) {
-        // if l is undefined get the label
-        if (l === undefined)
-            return this._object.label();
-        
-        // otherwise set the label
-        this._thenObject.label(l, redraw, show_label);
-        this._elseObject.label(l, redraw, show_label);
-        return this;
-    }
-
-    showingLabel() {
-        return this._object.showingLabel();
-    }
-
-    hasLabel() {
-        return this._object.hasLabel();
-    }
-
-    defaultDescription() {
-        return this._object.defaultDescription();
-    }
-
-    description(d) {
-        // if d is undefined get the description
-        if (d === undefined)
-            return this._object.description();
-
-        // otherwise set the description
-        this._thenObject.description(d);
-        this._elseObject.description(d);
-        return this;
-    }
-
-    style(st, redraw) {
-        if (st === undefined)
-            return this._object.style();
-
-        this._thenObject.style(st, redraw);
-        this._elseObject.style(st, redraw);
+    unfix() {
+        this._object.unfix();
     }
 
     is_inf() {
@@ -1404,11 +1524,6 @@ class DGIf extends DGObject {
         this._object.drawMe(view);
     }
 
-    highlight(h, redraw) {
-        if (!this._valid)
-            return false;
-        this._object.highlight(h, redraw);
-    }
 
     isNear(x, y, worldToScreen) {
         if (!this._valid)
@@ -1424,6 +1539,10 @@ class DGIf extends DGObject {
         return this._object.eq(other);
     }
 }
+
+// -----------------------------------------------------------------------------
+// Poincare disc elements
+// -----------------------------------------------------------------------------
 
 class DGPoincareLine extends DGCircline {
     constructor(p1, p2) {
@@ -1452,61 +1571,6 @@ class DGPoincareLine extends DGCircline {
         const u = this._p1.cp1().to_complex();
         const v = this._p2.cp1().to_complex();
         this._circline = Circline.mk_poincare_line(u, v);
-    }
-}
-
-class DGArc extends DGCircline {
-    constructor(p1, p, p2) {
-        super();
-        this._p1 = p1;
-        this._p = p;
-        this._p2 = p2;
-        p1.addDependent(this);
-        p.addDependent(this);
-        p2.addDependent(this);
-        this.recalcMe();
-    }
-
-    type() {
-        return "arc";
-    }
-    
-    recalcMe() {
-        this._valid = this._p1.valid() && this._p.valid() && this._p2.valid();
-        if (!this._valid)
-            return;
-        this._circline = Circline.mk_circline3(this._p1, this._p, this._p2);
-    }
-
-    drawMe(view) {
-        function canonAngle(alpha) {
-            const k = Math.floor((alpha + Math.PI) / (2 * Math.PI));
-            let res = alpha - 2*k*Math.PI;
-            if (res < 0)
-                res += 2*Math.PI;
-            return res;
-        }
-        
-        function doDraw(cl, style) {
-            if (cl._circline.is_line()) {
-                const [x1, y1] = cl._p1.coords();
-                const [x, y] = cl._p.coords();
-                const [x2, y2] = cl._p2.coords();
-                if (Circline.between(cl._p1, cl._p, cl._p2))
-                    view.segment(x1, y1, x2, y2, style);
-                else
-                    view.segment_complement(x1, y1, x2, y2, style);
-            } else {
-                const c = cl._circline.circle_center();
-                const r = cl._circline.circle_radius();
-                const a1 = -cl._p1.cp1().to_complex().sub(c).arg();
-                const a = -cl._p.cp1().to_complex().sub(c).arg();
-                const a2 = -cl._p2.cp1().to_complex().sub(c).arg();
-                const [x, y] = c.coords();
-                view.arc(x, y, r, a1, a2, canonAngle(a2 - a1) < canonAngle(a - a1), style);
-            }
-        }
-        doDraw(this, {color: this.color(), width: this.width(), dash: this.dash()});
     }
 }
 
@@ -1574,4 +1638,5 @@ class DGPoincareCircle extends DGPoincareCircleR {
     }
 }
 
-export { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR, REDRAW, NO_REDRAW };
+export { DGObject, DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGConst, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR, REDRAW, NO_REDRAW };
+

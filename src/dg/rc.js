@@ -139,7 +139,7 @@ function tangents(A, c, redraw) {
 function other_tangent(A, c, t, redraw) {
     const [t1, t2] = tangents(A, c, false).map(t => t.hide(NO_REDRAW));
     const t_ = DG.If((x, y) => x.eq(y), t2, t1, [t, t1], NO_REDRAW);
-    t_.show(true, NO_REDRAW);
+    t_.show(NO_REDRAW);
     t_.description("Tangent from point " + A.label() + " to circle " + c.label(), redraw);
     return t_;
 }
@@ -182,7 +182,7 @@ function towards_aux(X, Y, p, q, redraw) {
     if (p*q < 0)
         Z = reflectP(X, Z, NO_REDRAW).hide(NO_REDRAW);
 
-    return DG.If((X, Y) => X.eq(Y), DG.clone(X, NO_REDRAW).hide(NO_REDRAW), Z, [X, Y], redraw).show(true, redraw);
+    return DG.If((X, Y) => X.eq(Y), DG.clone(X, NO_REDRAW).hide(NO_REDRAW), Z, [X, Y], redraw).show(redraw);
 }
 
 // point B such that vector AB equals vector XY
@@ -198,7 +198,7 @@ function translate_vec(X, Y, A, redraw) {
                        DG.clone(Y, NO_REDRAW).hide(NO_REDRAW),
                        B,
                        [X, A]).hide(NO_REDRAW),
-                 [X, Y], NO_REDRAW).show(true, redraw);
+                 [X, Y], NO_REDRAW).show(redraw);
 }
 
 // point W such that XY : ZW = p : q
@@ -244,7 +244,7 @@ function reflectP(O, B, redraw) {
     const c = circle(O, B, NO_REDRAW).hide(NO_REDRAW);
     const BB = intersectLC_other(l, c, B, NO_REDRAW).hide(NO_REDRAW);
     const r = DG.If((O, B) => O.eq(B), DG.clone(B, NO_REDRAW).hide(NO_REDRAW), BB, [O, B], NO_REDRAW);
-    r.description("Reflect point " + B.label() + " over point " + O.label(), redraw);
+    r.description("Reflect point " + B.label() + " about point " + O.label(), redraw);
     return r;
 }
 
@@ -255,8 +255,19 @@ function reflectL(l, A, redraw) {
     const c = circle(M, A, NO_REDRAW).hide(NO_REDRAW);
     const AA = intersectLC_other(p, c, A, NO_REDRAW).hide(NO_REDRAW);
     const r = DG.If((A, M) => A.eq(M), DG.clone(A, NO_REDRAW).hide(NO_REDRAW), AA, [A, M], NO_REDRAW);
-    r.description("Reflect point " + A.label() + " over line " + l.label(), redraw);
+    r.description("Reflect point " + A.label() + " about line " + l.label(), redraw);
     return r;
+}
+
+// reflection of line l around point O 
+function reflectP_line(O, l, redraw) {
+    var B1 = DG.randomPointOnLine(l, NO_REDRAW).hide();
+    var B2 = DG.randomPointOnLine(l, NO_REDRAW, p => !B1.eq(p)).hide();
+    var B1p = reflectP(O, B1, NO_REDRAW).hide(NO_REDRAW);
+    var B2p = reflectP(O, B2, NO_REDRAW).hide(NO_REDRAW);
+    var lp = line(B1p, B2p, NO_REDRAW);
+    lp.description("Reflect line " + l.label() + " about point " + O.label(), redraw);
+    return lp;
 }
 
 // circumcenter of triangle ABC

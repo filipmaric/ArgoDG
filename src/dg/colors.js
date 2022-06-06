@@ -1,5 +1,16 @@
 const ctx = document.createElement("canvas").getContext("2d");
 
+// read RGB from rgb or rgba string
+export function parseRGB(str) {
+    const m = str.match(/^rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(,\s*(\d+([.]\d*)?))?\s*\)$/i);
+    return m ? {
+        r: parseFloat(m[1]),
+        g: parseFloat(m[2]),
+        b: parseFloat(m[3])
+    } : null;
+}
+
+
 // convert color in any format to rgb
 export function rgbColor(str){
     function hexToRGB(hex) {
@@ -11,15 +22,6 @@ export function rgbColor(str){
         } : null;
     }
 
-    function parseRGB(str) {
-        const m = str.match(/^rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(,\s*(\d+([.]\d*)?))?\s*\)$/i);
-        return m ? {
-            r: m[1],
-            g: m[2],
-            b: m[3]
-        } : null;
-    }
-    
     ctx.fillStyle = str;
     const color = ctx.fillStyle;
     if (color[0] == '#')
@@ -35,7 +37,7 @@ export function getOpacity(color) {
     if (!color)
         return defaultOpacity;
     const m = color.match(/^rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+([.]\d*)?)\s*\)$/i);
-    return m ? m[4] : defaultOpacity;
+    return parseFloat(m ? m[4] : defaultOpacity);
 }
 
 // set opacity to color string

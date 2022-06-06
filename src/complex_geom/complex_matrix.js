@@ -40,7 +40,7 @@ class ComplexMatrix2x2 {
     inv() {
         if (!this._inv)
             this._inv = new ComplexMatrix2x2(this.D, this.B.uminus(),
-                                             this.C.uminus(), this.A).multC(this.det().recip());
+                                             this.C.uminus(), this.A).multC(this.det().reciprocal());
         return this._inv;
     }
 
@@ -77,9 +77,9 @@ class ComplexMatrix2x2 {
                                     this.C.mult(obj), this.D.mult(obj));
     }
 
-    multCP1(obj) {
+    multCP1(obj, normalize) {
         return new CP1(this.A.mult(obj.z1).add(this.B.mult(obj.z2)),
-                       this.C.mult(obj.z1).add(this.D.mult(obj.z2)));
+                       this.C.mult(obj.z1).add(this.D.mult(obj.z2)), normalize);
     }
 
     multInvCP1(obj) {
