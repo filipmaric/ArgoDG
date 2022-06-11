@@ -325,6 +325,8 @@ class DGObject {
         let result;
         if (this.hasLabel()) {
             result = this.label();
+            if (this.isPoint())
+                console.log(this.x(), this.y());
             if (this.hasDescription())
                 result += ": " + this.description();
             else
@@ -438,12 +440,14 @@ class DGObject {
     }
     
     // check if two objects are equal
-    eq(other) {
+    eq(other, eps) {
         if (this.isPoint() && other.isPoint()) {
-            return this.cp1().eq(other.cp1());
+            return this.cp1().eq(other.cp1(), eps);
         }
         if (this instanceof DGCircline && other instanceof DGCircline) {
-            return this.circline().eq(other.circline())
+            if (!this.valid() || !other.valid())
+                return false;
+            return this.circline().eq(other.circline(), eps)
         }
         return false;
     }
@@ -681,13 +685,16 @@ class DGPoint extends DGObject {
     }
 
     // check equality of two points (other can represented by a complex number of cp1)
-    eq(other) {
+    eq(other, eps) {
         if (other instanceof CP1)
-            return this.cp1().eq(other);
+            return this.cp1().eq(other, eps);
         if (other instanceof Complex)
-            return !this.is_inf() && this.to_complex().eq(other);
-        if (other.isPoint())
-            return this.cp1().eq(other.cp1());
+            return !this.is_inf() && this.to_complex().eq(other, eps);
+        if (other.isPoint()) {
+            if (!this.valid() || !other.valid())
+                return false;
+            return this.cp1().eq(other.cp1(), eps);
+        }
         return false;
     }
 
@@ -1402,8 +1409,9 @@ class DGIf extends DGObject {
     constructor(condition, thenObject, elseObject, dependencies) {
         super();
         this._condition = condition;
-        this._thenObject = thenObject;
-        this._elseObject = elseObject;
+        // both subobjects should be hidden
+        this._thenObject = thenObject.hide(NO_REDRAW);
+        this._elseObject = elseObject.hide(NO_REDRAW);
         this._dependencies = dependencies;
         thenObject.addDependent(this);
         elseObject.addDependent(this);
@@ -1433,6 +1441,16 @@ class DGIf extends DGObject {
         return this._object.isLine();
     }
 
+    // both subobjects must be hidden, and DGIf has its own visibility
+    hidden() {
+        return super.getProperty("_hide");
+    }
+
+    setVisibility(visible, redraw) {
+        super.setProperty("_hide", !visible, redraw);
+    }
+
+    // other properties are delegated to subobjects
     getProperty(prop, defaultValue) {
         return this._object.getProperty(prop, defaultValue);
     }
@@ -1535,8 +1553,8 @@ class DGIf extends DGObject {
         this._object.drawLabel(view);
     }
 
-    eq(other) {
-        return this._object.eq(other);
+    eq(other, eps) {
+        return this._object.eq(other, eps);
     }
 }
 

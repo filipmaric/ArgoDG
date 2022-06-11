@@ -1,4 +1,4 @@
-const { Circline, Complex, Moebius }  = require('../src/complex_geom.js');
+const { Circline, Complex, CP1, Moebius }  = require('../src/complex_geom.js');
 
 test('mk_line', () => {
     expect(Circline.mk_line(Complex.zero, Complex.one).eq(Circline.x_axis())).toBeTruthy();
@@ -235,3 +235,15 @@ test('eq', () => {
     expect(H1.eq(H3)).toBeFalsy();
 });
 
+test('cosAngle', () => {
+    expect(Circline.cosAngle(Circline.x_axis(), Circline.y_axis())).toBeCloseTo(0, 1e-12);
+    expect(Circline.cosAngle(Circline.x_axis(), Circline.unit_circle())).toBeCloseTo(0, 1e-12);
+    expect(Circline.cosAngle(Circline.y_axis(), Circline.unit_circle())).toBeCloseTo(0, 1e-12);
+    const yeqx = Circline.mk_line(Complex.zero, new Complex(1, 1));
+    expect(Math.abs(Circline.cosAngle(Circline.x_axis(), yeqx))).toBeCloseTo(Math.sqrt(2)/2, 1e-12);
+    expect(Math.abs(Circline.cosAngle(Circline.y_axis(), yeqx))).toBeCloseTo(Math.sqrt(2)/2, 1e-12);
+
+    const M = Moebius.moebius_01inf(CP1.of_xy(3, 3), CP1.of_xy(2, 5), CP1.of_xy(5, 3));
+    expect(Circline.cosAngle(M.moebius_circline(Circline.x_axis()), M.moebius_circline(Circline.y_axis()))).toBeCloseTo(0, 1e-12);
+    expect(Math.abs(Circline.cosAngle(M.moebius_circline(Circline.y_axis()), M.moebius_circline(yeqx)))).toBeCloseTo(Math.sqrt(2)/2, 1e-12);
+});

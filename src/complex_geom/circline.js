@@ -6,20 +6,42 @@ import { Moebius } from './moebius.js';
 class Circline {
     // Circline is represented by a Hermitean matrix
     constructor(A, B, C, D) {
-        if (arguments.length == 1 && arguments[0] instanceof ComplexMatrix2x2)
+        if (arguments[0] instanceof ComplexMatrix2x2)
             this.H = arguments[0];
-        else {
-            if (!A.is_zero()) {
-                const a = 1 / A.norm();
-                A = A.scale(a);
-                B = B.scale(a);
-                C = C.scale(a);
-                D = D.scale(a);
-            }
+        else
             this.H = new ComplexMatrix2x2(A, B, C, D);
-        }
         this.normalize();
     }
+
+    normalize() {
+        this.H = Circline.normalizeOriented(this.H);
+        this.H_unoriented = Circline.normalizeUnoriented(this.H);
+    }
+
+    // convert the H matrix to canonical form (used for easy circline comparison)
+    // A is set to 1 if possible,
+    // otherwise B is set to unit modulus and nonegative argument
+    // WARNING: this can change orientation
+    static normalizeUnoriented(H) {
+        if (!H.A.is_zero()) {
+            return H.multC(H.A.reciprocal());
+        } else {
+            const arg = H.B.arg();
+            if (0 <= arg && arg < Math.PI)
+                return H.multC(1 / H.B.norm());
+            else
+                return H.multC(- 1 / H.B.norm());
+        }
+    }
+
+    static normalizeOriented(H) {
+        if (!H.A.is_zero()) {
+            return H.multC(1 / H.A.norm());
+        } else {
+            return H.multC(1 / H.B.norm());
+        }
+    }
+
 
     // Circline that represents an Euclidean circle with center in a (finite) complex number a
     // that has a radius r
@@ -192,7 +214,17 @@ class Circline {
     // z1, w, z2 are either all CP1 elements, or can be converted to those by means of
     // cp1 method
     static h_between(z1, w, z2, eps) {
+        if (!(w instanceof CP1))
+            w = w.cp1();
         return unit_circle.in_disc(w, eps) && Circline.other_arc(w, z1, w.inversion(), z2, eps) 
+    }
+
+    // cosine of the angle between two circlines
+    static cosAngle(c1, c2) {
+        function det12(H1, H2) {
+            return H1.A.mult(H2.D).add(H2.A.mult(H1.D)).sub(H1.B.mult(H2.C)).sub(H2.B.mult(H1.C));
+        }
+        return - det12(c1.H, c2.H).re() / (2 * Math.sqrt(c1.H.det().re() * c2.H.det().re()));
     }
 
     // random three different points on this circline
@@ -307,27 +339,9 @@ class Circline {
         return Circline.mk_circline3(...three_points);
     }
 
-    // convert the H matrix to canonical form (used for easy circline comparison)
-    // A is set to 1 if possible,
-    // otherwise B is set to unit modulus and nonegative argument
-    // WARNING: this can change orientation
-    normalize() {
-        if (!this.H.A.is_zero()) {
-            this.H = this.H.multC(this.H.A.reciprocal());
-        } else {
-            const arg = this.H.B.arg();
-            if (0 <= arg && arg < Math.PI)
-                this.H = this.H.multC(1 / this.H.B.norm());
-            else
-                this.H = this.H.multC(- 1 / this.H.B.norm());
-        }
-    }
-
-    // check if this circline is equal to the other one 
+    // check if this circline is equal to the other one (ignoring orientation)
     eq(other) {
-        this.normalize();
-        other.normalize();
-        return this.H.eq(other.H);
+        return this.H_unoriented.eq(other.H_unoriented);
     }
 }
 

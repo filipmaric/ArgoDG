@@ -15,6 +15,12 @@ function hdist(A, B) {
     return Math.acosh(1 + (2 * u.sub(v).norm2()) / ((1 - u.norm2()) * (1 - v.norm2())));
 }
 
+function hyp_cosPhi(A, B, C) {
+    const l1 = Circline.mk_poincare_line(A.to_complex(), B.to_complex());
+    const l2 = Circline.mk_poincare_line(C.to_complex(), B.to_complex());
+    return Circline.cosAngle(l1, l2);
+}
+    
 function cosPhi(A, B, C) {
     const u = A.to_complex();
     const v = B.to_complex();
@@ -61,6 +67,7 @@ function on_line_hdist(l, A, d, cond) {
         return DG.intersectCC_select(l, c, cond);
 }
 
+//
 function C_from_ABG(A, B, G, redraw)
 {
     const Mc = RCP.midpoint(A, B, NO_REDRAW).hide(NO_REDRAW);
@@ -68,10 +75,11 @@ function C_from_ABG(A, B, G, redraw)
     const s = DG.num((A, B, G, Mc) => 2 * Math.cosh(hdist(A, B)/2) * Math.sinh(hdist(G, Mc)), [A, B, G, Mc]);
     const r = DG.num(s => Math.asinh(s), [s]);
     // point C on line mc such that sinh(hdist(C, G)) = s and h_between(C, G, Mc)
-    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc));
+    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc, 1e-10));
     C.description("Calculated from centroid " + G.label() + " and vertices " + A.label() + " and " + B.label(), redraw)
     return C;
 }
+
 
 function AB_from_cCGMc(c, C, G, Mc, redraw) {
     const s = DG.num((C, G, Mc) => Math.sinh(hdist(C, G)) / (2 * Math.sinh(hdist(G, Mc))), [C, G, Mc]);
@@ -85,20 +93,22 @@ function AB_from_cCGMc(c, C, G, Mc, redraw) {
 }
 
 function C_from_GOMc(G, O, Mc, redraw) {
-    const s = DG.num((G, O, Mc) => (Math.cosh(hdist(O, Mc)))/(2*Math.cosh(hdist(G, O))*Math.sinh(hdist(G, Mc))) - Math.tanh(hdist(G, O)) * cosPhi(Mc, G, O), [G, O, Mc]);
+    const s = DG.num((G, O, Mc) => (Math.cosh(hdist(O, Mc)))/(2*Math.cosh(hdist(G, O))*Math.sinh(hdist(G, Mc))) - Math.tanh(hdist(G, O)) * hyp_cosPhi(Mc, G, O), [G, O, Mc]);
     const r = DG.num(s => Math.atanh(1/s), [s]);
     const mc = RCP.line(Mc, G, NO_REDRAW).hide(NO_REDRAW);
-    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc));
+    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc, 1e-10));
     C.description("Calcluated from centroid " + G.label() + ", circumcenter " + O.label() + ", and midpoint " + Mc.label(), redraw);
     return C;
 }
 
 
 function Mc_from_GOC(G, O, C, redraw) {
-    const s = DG.num((G, O, C) => (2*Math.cosh(hdist(C, O)) / (Math.cosh(hdist(G, O))*Math.sinh(hdist(C, G)))) - Math.tanh(hdist(G, O)) * cosPhi(C, G, O), [G, O, C]);
+    const s = DG.num((G, O, C) => (2*Math.cosh(hdist(C, O)) / (Math.cosh(hdist(G, O))*Math.sinh(hdist(C, G)))) - Math.tanh(hdist(G, O)) * hyp_cosPhi(C, G, O), [G, O, C]);
     const r = DG.num(s => Math.atanh(1/s), [s]);
+
     const mc = RCP.line(C, G, NO_REDRAW).hide(NO_REDRAW);
-    const Mc = on_line_hdist(mc, G, r, p => Circline.h_between(C, G, p));
+    const Mc = on_line_hdist(mc, G, r, p => Circline.h_between(C, G, p, 1e-10));
+    
     Mc.description("Calcluated from centroid " + G.label() + ", circumcenter " + O.label() + ", and vertex " + C.label(), redraw);
     return Mc;
 }

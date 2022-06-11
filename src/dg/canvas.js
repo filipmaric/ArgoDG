@@ -1,5 +1,6 @@
 import { laTeX2HTML } from './latex.js';
 import { getOpacity } from './colors.js';
+import { Complex } from '../complex_geom.js';
 
 // -----------------------------------------------------------------------------
 // encapsulate drawing canvas with a few basic drawing primitives
@@ -41,7 +42,7 @@ class Canvas {
             this._canvas.style.height = options.height + "px";
         }
 
-        this._canvas.getContext("2d").scale(ratio, ratio);
+        this.context().scale(ratio, ratio);
         
         if (options.border)
             this._canvas.style.border = options.border;
@@ -97,6 +98,37 @@ class Canvas {
     }
 
     arc(x, y, r, angle_from, angle_to, counterclockwise, color, width, dash, fill) {
+        // due to bugs in Firefox and Chrome arc primitive large circles are drawn specially
+        if (angle_from == 0 && angle_to == 2 * Math.PI) {
+            if (r > 500 * this.width()) {
+                const intersections = this.circle_endpoints(x, y, r);
+                if (intersections.length == 2) {
+                    this.segment(intersections[0][0], intersections[0][1],
+                                 intersections[1][0], intersections[1][1],
+                                 color, width, dash);
+                }
+                return;
+            }
+
+            // special fix for Firefox - split circle to two arc
+            if (navigator.userAgent.includes("Firefox") &&
+                r > this.width()) {
+                const intersections = this.circle_endpoints(x, y, r);
+                if (intersections.length == 2) {
+                    const P1 = new Complex(intersections[0][0], intersections[0][1]);
+                    const P2 = new Complex(intersections[1][0], intersections[1][1]);
+                    this.arc(P1.x(), P1.y(), 2, 0, 2*Math.PI, true, "green");
+                    this.arc(P2.x(), P2.y(), 2, 0, 2*Math.PI, true, "green");
+                    const c = new Complex(x, y);
+                    const a1 = P1.sub(c).arg();
+                    const a2 = P2.sub(c).arg();
+                    this.arc(x, y, r, a1, a2, counterclockwise, color, width, dash, fill);
+                    this.arc(x, y, r, a1, a2, !counterclockwise, color, width, dash, fill);
+                    return;
+                }
+            }
+        }
+        
         color = color || this._defaultColor;
         width = width || this._defaultWidth;
         dash = dash || this._defaultDash;
@@ -150,6 +182,57 @@ class Canvas {
         this.segment(x2, y2, x2l, y2l);
     }
 
+    circle_endpoints(x, y, r) {
+        const [w, h] = [this.width(), this.height()];
+        const inUL = x*x + y*y < r*r;
+        const inUR = (x - w)*(x - w) + y*y < r*r;
+        const inDL = x*x + (y - h) * (y - h);
+        const inDR = (x - w)*(x - w) + (y - h)*(y - h) < r*r;
+
+        const intersections = [];
+        if (inUL != inUR) {
+            const d = Math.sqrt(r*r - y*y);
+            const x0 = x + d;
+            const x1 = x - d;
+            if (0 <= x0 && x0 <= w)
+                intersections.push([x0, 0]);
+            else if (0 <= x1 && x1 <= w)
+                intersections.push([x1, 0]);
+        }
+
+        if (inDL != inDR) {
+            const d = Math.sqrt(r*r - (y - h)*(y - h));
+            const x0 = x + d;
+            const x1 = x - d;
+            if (0 <= x0 && x0 <= w)
+                intersections.push([x0, h]);
+            else if (0 <= x1 && x1 <= w)
+                intersections.push([x1, h]);
+        }
+
+        if (inUL != inDL) {
+            const d = Math.sqrt(r*r - x*x);
+            const y0 = y + d;
+            const y1 = y - d;
+            if (0 <= y0 && y0 <= h)
+                intersections.push([0, y0]);
+            else if (0 <= y1 && y1 <= h)
+                intersections.push([0, y1]);
+        }
+
+        if (inUR != inDR) {
+            const d = Math.sqrt(r*r - (x - w)*(x - w));
+            const y0 = y + d;
+            const y1 = y - d;
+            if (0 <= y0 && y0 <= h)
+                intersections.push([w, y0]);
+            else if (0 <= y1 && y1 <= h)
+                intersections.push([w, y1]);
+        }
+
+        return intersections;
+    }
+
     line_endpoints(x1, y1, x2, y2) {
         const [w, h] = [this.width(), this.height()];
 
@@ -158,7 +241,7 @@ class Canvas {
         else if (y1 == y2)
             return [0, y1, w, y1];
         else {
-            let result = []
+            let intersections = []
 
             function point(t) {
                 const x = x1 + t * (x2 - x1);
@@ -172,33 +255,33 @@ class Canvas {
             [x, y] = point(t);
 
             if (0 <= y && y <= h)
-                result.push.apply(result, [x, y]);
+                intersections.push.apply(intersections, [x, y]);
 
             t = (w - x1) / (x2 - x1);
             [x, y] = point(t);
 
             if (0 <= y && y <= h)
-                result.push.apply(result, [x, y]);
+                intersections.push.apply(intersections, [x, y]);
 
-            if (result.length == 4)
-                return result;
+            if (intersections.length == 4)
+                return intersections;
 
             t = (0 - y1) / (y2 - y1);
             [x, y] = point(t);
 
             if (0 <= x && x <= w)
-                result.push.apply(result, [x, y]);
+                intersections.push.apply(intersections, [x, y]);
             
-            if (result.length == 4)
-                return result;
+            if (intersections.length == 4)
+                return intersections;
             
             t = (h - y1) / (y2 - y1);
             [x, y] = point(t);
 
             if (0 <= x && x <= w)
-                result.push.apply(result, [x, y]);
+                intersections.push.apply(intersections, [x, y]);
 
-            return result;
+            return intersections;
         }
     }
 

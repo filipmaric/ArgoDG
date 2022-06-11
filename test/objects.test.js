@@ -36,16 +36,16 @@ test('show/hide', () => {
     const P2 = new DGPoint(-50, -50);
     const P = new DGIf((P1, P2) => true, P1, P2, [P1, P2]);
     expect(P.visible()).toBeTruthy();
-    expect(P1.visible()).toBeTruthy();
-    expect(P2.visible()).toBeTruthy();
+    expect(P1.visible()).toBeFalsy();
+    expect(P2.visible()).toBeFalsy();
     P.hide(NO_REDRAW);
     expect(P.visible()).toBeFalsy();
     expect(P1.visible()).toBeFalsy();
     expect(P2.visible()).toBeFalsy();
     P.show(NO_REDRAW);
     expect(P.visible()).toBeTruthy();
-    expect(P1.visible()).toBeTruthy();
-    expect(P2.visible()).toBeTruthy();
+    expect(P1.visible()).toBeFalsy();
+    expect(P2.visible()).toBeFalsy();
 
     const n = new DGNum(() => 0, []);
     expect(n.hidden()).toBeTruthy();

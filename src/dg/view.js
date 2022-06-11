@@ -44,7 +44,6 @@ class View {
         this._xmax = xmax;
         this._ymin = ymin;
         this._ymax = ymax;
-        const ratio = window.devicePixelRatio;
         this._scalex = (this._canvas.width()) / (xmax - xmin);
         this._scaley = (this._canvas.height()) / (ymax - ymin);
         this._x0 = -xmin * this._scalex;
