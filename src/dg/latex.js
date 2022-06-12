@@ -23,11 +23,17 @@ function splitSubscript(str) {
     if (!str)
         return [];
     
-    const m = normalizeBraces(str).match(/^([\w'()]+)(_{([\w{}]+)})?$/);
+    const m = normalizeBraces(str).match(/^([\w'()]+)(_{([\w{}]+)})?([\w'()]+)?$/);
+    if (!m)
+        return str;
+
+    let result = {text: m[1]};
     if (m[3])
-        return {text: m[1], subscript: m[3]};
-    else
-        return {text: m[1]};
+        result.subscript = m[3];
+    if (m[4])
+        result.rest = m[4];
+
+    return result;
 }
 
 export { normalizeBraces, laTeX2HTML, removeLaTeX, splitSubscript };

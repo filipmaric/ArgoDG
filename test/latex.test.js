@@ -28,4 +28,9 @@ test('splitSubscript', () => {
     m = splitSubscript("A_{B_1}");
     expect(m.text).toBe("A");
     expect(m.subscript).toBe("B_{1}");
+
+    m = splitSubscript("r_{s_b}(A)");
+    expect(m.text).toBe("r");
+    expect(m.subscript).toBe("s_{b}");
+    expect(m.rest).toBe("(A)");
 });

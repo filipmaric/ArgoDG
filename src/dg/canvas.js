@@ -339,10 +339,14 @@ class Canvas {
 
         const m = splitSubscript(txt);
         if (!m.subscript)
-            this.text(x, y, txt, font, color);
+            return this.text(x, y, txt, font, color);
         else {
             const x1 = this.text(x, y, m.text, font, color);
-            this.latex(x1, y + 2, m.subscript, reduceFont(ctx.font, 2), color);
+            const x2 = this.latex(x1, y + 2, m.subscript, reduceFont(ctx.font, 2), color);
+            if (!m.rest)
+                return x2;
+            
+            return this.latex(x2, y + 2, m.rest, ctx.font, color);
         }
     }
     

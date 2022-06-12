@@ -189,9 +189,9 @@ function hyperparallel(l, A, redraw) {
 
 // a line that bisect the angle BAC
 function angle_bisector(B, A, C, redraw) {
-    const k = circle(A, B, NO_REDRAW).color("red")//.hide(NO_REDRAW);
-    const c = line(A, B, NO_REDRAW).color("purple")//.hide(NO_REDRAW);
-    const b = line(A, C, NO_REDRAW).color("orange")//.hide(NO_REDRAW);
+    const k = circle(A, B, NO_REDRAW).hide(NO_REDRAW);
+    const c = line(A, B, NO_REDRAW).hide(NO_REDRAW);
+    const b = line(A, C, NO_REDRAW).hide(NO_REDRAW);
     const X = DG.intersectCC_select(b, k, p => !Circline.h_between(p, A, C), NO_REDRAW).hide(NO_REDRAW);
     const k1 = circle(B, X, NO_REDRAW).hide(NO_REDRAW);
     const k2 = circle(X, B, NO_REDRAW).hide(NO_REDRAW);
