@@ -10,8 +10,10 @@
     "test": "jest ./test"
   },
   "jest": {
-      "testEnvironment": "jsdom",
-      "setupFiles": [ "jest-canvas-mock" ]
+    "testEnvironment": "jsdom",
+    "setupFiles": [
+      "jest-canvas-mock"
+    ]
   },
   "keywords": [],
   "author": "Filip Marić (filip@matf.bg.ac.rs)",

@@ -173,7 +173,7 @@ function tangents(A, O, c, redraw) {
 // tangent from point A that touch circle c, that is different from the given line t
 function other_tangent(A, O, c, t, redraw) {
     const [t1, t2] = tangents(A, O, c, NO_REDRAW).map(t => t.hide(NO_REDRAW));
-    const t_ = DG.If((x, y) => x.eq(y), t2, t1, [t, t1]);
+    const t_ = DG.If((t, t1) => t.eq(t1, 1e-7), t2, t1, [t, t1]);
     t_.description("Tangent from point " + A.label() + " to circle " + c.label(), redraw);
     return t_;
 }
@@ -189,9 +189,9 @@ function hyperparallel(l, A, redraw) {
 
 // a line that bisect the angle BAC
 function angle_bisector(B, A, C, redraw) {
-    const k = circle(A, B, NO_REDRAW).hide(NO_REDRAW);
-    const c = line(A, B, NO_REDRAW).hide(NO_REDRAW);
-    const b = line(A, C, NO_REDRAW).hide(NO_REDRAW);
+    const k = circle(A, B, NO_REDRAW).color("red")//.hide(NO_REDRAW);
+    const c = line(A, B, NO_REDRAW).color("purple")//.hide(NO_REDRAW);
+    const b = line(A, C, NO_REDRAW).color("orange")//.hide(NO_REDRAW);
     const X = DG.intersectCC_select(b, k, p => !Circline.h_between(p, A, C), NO_REDRAW).hide(NO_REDRAW);
     const k1 = circle(B, X, NO_REDRAW).hide(NO_REDRAW);
     const k2 = circle(X, B, NO_REDRAW).hide(NO_REDRAW);

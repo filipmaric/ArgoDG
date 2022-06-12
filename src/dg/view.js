@@ -117,10 +117,9 @@ class View {
     }
 
     text(x, y, txt) {
-        txt = removeLaTeX(txt);
         const [xt, yt] = this.worldToScreen(x, y);
         const displace = 8;
-        this._canvas.text(xt + displace, yt + displace, txt);
+        this._canvas.latex(xt + displace, yt + displace, txt);
     }
     
     segment(x1, y1, x2, y2, options) {
@@ -159,7 +158,6 @@ class View {
     }
 
     line_label(x1, y1, x2, y2, color, label) {
-        label = removeLaTeX(label);
         const [x1t, y1t] = this.worldToScreen(x1, y1);
         const [x2t, y2t] = this.worldToScreen(x2, y2);
         this._canvas.line_label(x1t, y1t, x2t, y2t, color, label);

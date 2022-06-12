@@ -19,4 +19,15 @@ function removeLaTeX(str) {
     return str ? fixpointReplace(normalizeBraces(str), /([\w'()]+)_{(\w+)}/g, '$1$2') : "";
 }
 
-export { normalizeBraces, laTeX2HTML, removeLaTeX };
+function splitSubscript(str) {
+    if (!str)
+        return [];
+    
+    const m = normalizeBraces(str).match(/^([\w'()]+)(_{([\w{}]+)})?$/);
+    if (m[3])
+        return {text: m[1], subscript: m[3]};
+    else
+        return {text: m[1]};
+}
+
+export { normalizeBraces, laTeX2HTML, removeLaTeX, splitSubscript };

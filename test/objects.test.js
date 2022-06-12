@@ -421,6 +421,10 @@ test('redraw', () => {
             reset() {
                 this.calledDraw = 0;
             },
+
+            change() {
+                this.draw();
+            },
             
             draw: function() {
                 this.calledDraw++;

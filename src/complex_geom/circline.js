@@ -124,7 +124,7 @@ class Circline {
     }
 
     // precision for checking in/on/out
-    static EPS = 1e-12;
+    static EPS = 1e-10;
 
     quad_form(z) {
         if (!(z instanceof CP1))
@@ -340,8 +340,8 @@ class Circline {
     }
 
     // check if this circline is equal to the other one (ignoring orientation)
-    eq(other) {
-        return this.H_unoriented.eq(other.H_unoriented);
+    eq(other, eps) {
+        return this.H_unoriented.eq(other.H_unoriented, eps);
     }
 }
 

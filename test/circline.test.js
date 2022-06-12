@@ -74,7 +74,7 @@ test('in_disc', () => {
     expect(c.in_disc(Complex.one.sub(new Complex(1e-10, 1e-10)))).toBeTruthy();
     expect(c.in_disc(Complex.one.sub(new Complex(1e-15, 1e-15)))).toBeFalsy();
     expect(c.in_disc(Complex.of_polar(1.0, Math.PI/3))).toBeFalsy();
-    expect(c.in_disc(Complex.of_polar(1.0 - 1e-12, Math.PI/3))).toBeTruthy();
+    expect(c.in_disc(Complex.of_polar(1.0 - 1e-8, Math.PI/3))).toBeTruthy();
 
     const l = Circline.x_axis();
     expect(l.in_disc(Complex.zero)).toBeFalsy();

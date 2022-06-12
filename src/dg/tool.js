@@ -137,14 +137,22 @@ class ToolDragFree extends Tool {
         let [x, y] = [p.x(), p.y()];
         let [xt, yt] = worldToScreen(x, y);
         const eps = 2;
-        if (e.key == "ArrowRight")
+        if (e.key == "ArrowRight") {
+            e.preventDefault();
             xt += 1;
-        else if (e.key == "ArrowLeft")
+        }
+        else if (e.key == "ArrowLeft") {
+            e.preventDefault();
             xt -= 1;
-        if (e.key == "ArrowUp")
+        }
+        else if (e.key == "ArrowUp") {
+            e.preventDefault();
             yt -= 1;
-        else if (e.key == "ArrowDown")
+        }
+        else if (e.key == "ArrowDown") {
+            e.preventDefault();
             yt += 1;
+        }
 
         [x, y] = screenToWorld(xt, yt)
         p.moveTo(x, y);

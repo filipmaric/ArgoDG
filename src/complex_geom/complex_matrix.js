@@ -59,9 +59,9 @@ class ComplexMatrix2x2 {
         return [this._Q, this._R];
     }
     
-    eq(other) {
-        return this.A.eq(other.A) && this.B.eq(other.B) &&
-               this.C.eq(other.C) && this.D.eq(other.D);
+    eq(other, eps) {
+        return this.A.eq(other.A, eps) && this.B.eq(other.B, eps) &&
+               this.C.eq(other.C, eps) && this.D.eq(other.D, eps);
     }
 
     is_hermitean() {

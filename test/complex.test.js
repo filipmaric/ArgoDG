@@ -207,9 +207,14 @@ test('eq complex numbers', () => {
     expect(c1.eq(c2)).toBeFalsy();
     expect(c1.eq(c3)).toBeTruthy();
     expect(c1.eq(new Complex(1, 2 + 1e-15))).toBeTruthy();
-    expect(c1.eq(new Complex(1, 2 + 1.5e-8))).toBeFalsy();
+    expect(c1.eq(new Complex(1, 2 + 1e-7))).toBeFalsy();
     expect(c1.eq(new Complex(1 + 1e-9, 2 + 1e-9))).toBeTruthy();
 
     expect(c1.eq(new Complex(1 + 1e-5, 2 + 1e-5))).toBeFalsy();
     expect(c1.eq(new Complex(1 + 1e-5, 2 + 1e-5), 1e-4)).toBeTruthy();
+
+    expect(new Complex(1e5, 1e5).eq(new Complex(1e5+1e-3, 1e5))).toBeTruthy();
+    expect(new Complex(1e5, 1e5).eq(new Complex(1e5+1, 1e5))).toBeFalsy();
+    expect(new Complex(1e5, 1e5).eq(new Complex(1e5+1, 1e5), 1e-5)).toBeTruthy();
+    expect(new Complex(1e9, 1e9).eq(new Complex(1e9+1, 1e9+1))).toBeTruthy();
 });

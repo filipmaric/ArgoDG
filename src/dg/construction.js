@@ -7,6 +7,7 @@ class Construction {
     constructor() {
         this._objects = [];
         this._views = [];
+        this._listeners = [];        
         this._animation_step = -1;
     }
 
@@ -19,6 +20,10 @@ class Construction {
         this._views.push(view);
         view.addConstruction(this);
     }
+
+    addListener(listener) {
+        this._listeners.push(listener);
+    }    
 
     addObject(o, redraw) {
         if (!o) return;
@@ -34,6 +39,10 @@ class Construction {
         o.removeConstruction(this);
         if (redraw === undefined || redraw)
             this.draw();
+    }
+
+    forEach(fun) {
+        this._objects.forEach(fun);
     }
 
     visibleObjects() {
@@ -56,6 +65,14 @@ class Construction {
             view.redraw();
         });            
     }
+
+    change(redraw) {
+        if (redraw == undefined || redraw)
+            this.draw();
+        this._listeners.forEach(listener => {
+            listener.change(this);
+        });
+    }    
 
     animationInProgress() {
         return this._animation_step != -1;

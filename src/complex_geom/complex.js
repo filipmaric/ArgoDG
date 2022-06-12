@@ -77,26 +77,29 @@ class Complex {
 
     // check if this complex number is zero (up to the given precision)
     is_zero(eps) {
-        if (!eps)
+        if (eps === undefined)
             eps = Complex.EPS;
         return this.norm2() < eps * eps;
     }
 
     // check if two numbers are equal (up to the given precision)
     eq(other, eps) {
-        return this.sub(other).is_zero(eps);
+        // default relative error
+        if (eps === undefined)
+            eps = 1e-8;
+        return this.sub(other).norm() <= eps * (this.norm() + other.norm()) / 2;
     }
 
     // check if this complex number is real (up to the given precision)
     is_real(eps) {
-        if (!eps)
+        if (eps === undefined)
             eps = Complex.EPS;
         return Math.abs(this.im()) < eps;
     }
 
     // check if this complex number is pure imaginary (up to the given precision)
     is_imag(eps) {
-        if (!eps)
+        if (eps === undefined)
             eps = Complex.EPS;
         
         return Math.abs(this.re()) < eps;

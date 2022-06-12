@@ -71,7 +71,7 @@ class DGObject {
     fireChangeEvent() {
         // redraw constructions where this object occurs
         this._constructions.forEach(construction => {
-            construction.draw();
+            construction.change();
         });
     }
 

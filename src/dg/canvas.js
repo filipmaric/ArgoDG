@@ -1,4 +1,4 @@
-import { laTeX2HTML } from './latex.js';
+import { removeLaTeX, laTeX2HTML, splitSubscript } from './latex.js';
 import { getOpacity } from './colors.js';
 import { Complex } from '../complex_geom.js';
 
@@ -22,6 +22,7 @@ class Canvas {
         } else {
             this._container = element;
             this._canvas = document.createElement("canvas");
+            this._container.innerHTML = "";
             this._container.append(this._canvas);
             this._canvas.width = this._container.width;
             this._canvas.height = this._container.height;
@@ -311,17 +312,45 @@ class Canvas {
             x = x1l;
             y = this.height() - offset;
         }
-        this.text(x, y, label, "15px Arial", color);
+        this.latex(x, y, label, "15px Arial", color);
+    }
+
+    fixRightMargin(x, txt, font) {
+        const ctx = this.context();
+        ctx.font = font;
+        const metrics = ctx.measureText(removeLaTeX(txt));
+        const width = metrics.width;
+        if (x + metrics.width > this.width())
+            x -= (x + metrics.width - this.width());
+        return x;
+    }
+
+    latex(x, y, txt, font, color) {
+        const ctx = this.context();
+        ctx.font = font || "15px Arial";
+
+        x = this.fixRightMargin(x, txt, ctx.font);
+
+        function reduceFont(font, df) {
+            const m = font.match(/^(\d+)((\w|\s)+)$/)
+            const size = parseInt(m[1]);
+            return (size-df) + m[2];
+        }
+
+        const m = splitSubscript(txt);
+        if (!m.subscript)
+            this.text(x, y, txt, font, color);
+        else {
+            const x1 = this.text(x, y, m.text, font, color);
+            this.latex(x1, y + 2, m.subscript, reduceFont(ctx.font, 2), color);
+        }
     }
     
     text(x, y, txt, font, color) {
         const ctx = this.context();
         ctx.font = font || "15px Arial";
 
-        const metrics = ctx.measureText(txt);
-        const width = metrics.width;
-        if (x + metrics.width > this.width())
-            x -= (x + metrics.width - this.width());
+        x = this.fixRightMargin(x, txt, ctx.font);
         
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
@@ -331,6 +360,10 @@ class Canvas {
         if (color)
             ctx.fillStyle = color;
         ctx.fillText(txt, x, y);
+
+        const metrics = ctx.measureText(txt);
+        const width = metrics.width;
+        return x + width;
     }
 
     message(msg) {
