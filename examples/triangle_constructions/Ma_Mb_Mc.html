@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>Ma, Mb, Mc</title>
+    <script src="../../dist/DG.js"></script>
+    <script src="../../dist/RC.js"></script>
+  </head>
+  <body>
+    <h1>M<sub>a</sub>, M<sub>b</sub>, M<sub>c</sub></h1>
+    
+    <div id="mycanvas"></div>
+    
+    <script type="module">
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+      const Ma = RC.point(65, 40).label("M_a").color("green").description("Given point");
+      const Mb = RC.point(95, 67.5).label("M_b").color("green").description("Given point");
+      const Mc = RC.point(50, 67.5).label("M_c").color("green");
+
+      const MaMb = RC.line(Ma, Mb).color("DarkTurquoise").label("M_aM_b");
+      const MaMc = RC.line(Ma, Mc).color("DarkTurquoise").label("M_aM_c");
+      const MbMc = RC.line(Mb, Mc).color("DarkTurquoise").label("M_bM_c");
+
+      const c = RC.parallel(MaMb, Mc).label("c");
+      const b = RC.parallel(MaMc, Mb).label("b");
+      const a = RC.parallel(MbMc, Ma).label("a");
+
+      const A = RC.intersectLL(b, c).label("A");
+      const B = RC.intersectLL(a, c).label("B");
+      const C = RC.intersectLL(a, b).label("C");
+
+      const AB = RC.segment(A, B).width(3);
+      const AC = RC.segment(A, C).width(3);
+      const BC = RC.segment(B, C).width(3);
+
+      DG.animationButtons();
+    </script>
+  </body>
+</html>

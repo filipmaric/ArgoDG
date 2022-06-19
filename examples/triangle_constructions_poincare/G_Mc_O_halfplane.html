@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>G, O, Mc</title>
+    <script src="../../dist/DG.js"></script>
+    <script src="../../dist/RCP_HP.js"></script>
+    <script src="../../dist/ANP_HP.js"></script>
+  </head>
+  <body>
+    <h1>G, O, Mc</h1>
+    <canvas id="mycanvas"></canvas>
+    
+    <script type="module">
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, -1.2, 1.2, -1.2, 1.2);
+
+      const abs = RCP_HP.absolute.width("3"); 
+      const G = RCP_HP.point(-0.019597144957304597, 0.5537827135227549).label("G").color("blue");
+      const Mc = RCP_HP.point(-0.12143800277392738, 0.38926209240857784).label("M_c").color("blue");
+      const O = RCP_HP.point(-0.006156138075146155, 0.4883676430735883).label("O").color("blue");
+      const C = ANP_HP.C_from_GOMc(G, O, Mc).label("C");
+      const cc = RCP_HP.circle(O, C).color("blue").label("o");
+      
+      const bc = RCP_HP.line(O, Mc).color("blue").label("b_c");
+      const c = RCP_HP.drop_perp(bc, Mc).label("c");
+      const [A, B] = RCP_HP.intersectLC_both(c, cc);
+      A.label("A");
+      B.label("B");
+
+      const Ma = RCP_HP.midpoint(B, C).label("M_a").color("green");
+      const Mb = RCP_HP.midpoint(A, C).label("M_b").color("green");
+      const ma = RCP_HP.line(A, Ma).color("green").label("m_a");
+      const mb = RCP_HP.line(B, Mb).color("green").label("m_b");
+      const mc = RCP_HP.line(C, Mc).color("green").label("m_c");
+
+      const sa = RCP_HP.segment(B, C).color("red").width(2);
+      const sb = RCP_HP.segment(A, C).color("red").width(2);
+      const sc = RCP_HP.segment(A, B).color("red").width(2);
+    </script>
+  </body>
+</html>

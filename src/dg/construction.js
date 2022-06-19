@@ -105,7 +105,7 @@ class Construction {
 
     highlightAt(x, y, worldToScreen, highlighter) {
         this._objects.forEach(obj => {
-            if (obj.isNear(x, y, worldToScreen) && highlighter.shouldHighlight(obj))
+            if (obj.visible() && obj.isNear(x, y, worldToScreen) && highlighter.shouldHighlight(obj))
                 obj.highlightOn();
             else
                 obj.highlightOff();

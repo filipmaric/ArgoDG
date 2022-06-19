@@ -1,4 +1,4 @@
-import { Complex, CP1, Circline } from '../complex_geom.js';
+import { Complex, CP1, Circline, PoincareDisc, PoincareHalfPlane } from '../complex_geom.js';
 import { rgbColor, getOpacity, setOpacity } from './colors.js';
 
 const REDRAW = true;
@@ -397,7 +397,24 @@ class DGObject {
         // first a BFS traversal is used to calculate the number of objects that 
         // each relevant object depends on (its degree)
         
-        let queue = [];
+        let queue = {
+            elements: [],
+            start: 0,
+            init: function() {
+                this.elements = [];
+                this.start = 0;
+            },
+            push: function(x) {
+                this.elements.push(x);
+            },
+            empty: function() {
+                return this.start == this.elements.length;
+            },
+            shift() {
+                return this.elements[this.start++];
+            }
+        };
+
         const n = DGObject.num_objects;
         const degree = new Array(n).fill(0);
         const objects = new Array(n).fill(null);
@@ -412,14 +429,15 @@ class DGObject {
 
         objects[this._ID] = this;
         this._dependent_objects.forEach(enqueue);
-        while (queue.length > 0) {
+        while (!queue.empty()) {
             const obj = queue.shift();
             obj._dependent_objects.forEach(enqueue);
         }
 
         // next the Kahn's algoritm is performed
-        queue = [this._ID];
-        while (queue.length > 0) {
+        queue.init();
+        queue.push(this._ID);
+        while (!queue.empty()) {
             const id = queue.shift();
             objects[id].recalcMe();
             objects[id]._dependent_objects.forEach(obj => {
@@ -867,7 +885,7 @@ class DGCircline extends DGObject {
             const [p1, p2] = this._circline.line_points();
             const [x1, y1] = p1.coords();
             const [x2, y2] = p2.coords();
-            view.line_label(x1, y1, x2, y2, this._style._color, this._style._label);
+            view.line_label(x1, y1, x2, y2, this.color(), this.label());
         }
     }
 
@@ -882,6 +900,11 @@ class DGCircline extends DGObject {
     // return internal representation (FIXME: this should be private)
     circline() {
         return this._circline;
+    }
+
+    // return the center of the circline
+    center() {
+        return new DGCircleCenterPoint(this);
     }
 
     funArg() {
@@ -930,6 +953,8 @@ class DGLine extends DGCircline {
     // find intersection of two lines (infinite point if the lines are parallel)
     static intersect(l1, l2) {
         const p = l1.intersect(l2, false);
+        if (p.length == 0)
+            return CP1.inf;
         if (!p[0].is_inf())
             return p[0];
         if (!p[1].is_inf())
@@ -1063,11 +1088,6 @@ class DGCircle extends DGCircline {
         this._circline = Circline.mk_circle(this._c.to_complex(), this._r);
     }
 
-    // return the center of the circle
-    center() {
-        return new DGCircleCenterPoint(this);
-    }
-
     // check if the given CP1 object lies in the current circle disc (boundary excluded)
     inDisc(p) {
         return this._circline.in_disc(p);
@@ -1185,7 +1205,7 @@ class DGCircleCenterPoint extends DGPoint {
         this._valid = this._circle.valid();
         if (!this._valid)
             return;
-        this._coords = CP1.of_complex(this._circle.circline().circle_center());
+        this._coords = this._circle.circline().center();
     }
 }
 
@@ -1224,6 +1244,7 @@ class DGIntersectLL extends DGPoint {
         this._valid = this._l1.valid() && this._l2.valid();
         if (!this._valid)
             return;
+
         this._coords = DGLine.intersect(this._l1, this._l2);
     }
 }
@@ -1276,14 +1297,12 @@ class DGIntersections extends DGObject {
             const selected = this._intersections.filter(selectionCriterion);
             if (selected.length > 0)
                 return selected[0];
-            console.log(selectionCriterion);
-            throw "No selected points";
+            return null;
         }
         
         if (typeof selectionCriterion == "number") {
-            if (this._intersections.length <= selectionCriterion) {
-                throw "No selected points";
-            }
+            if (this._intersections.length <= selectionCriterion)
+                return null;
             return this._intersections[selectionCriterion];
         }
 
@@ -1386,6 +1405,17 @@ class DGIntersectPoint extends DGPoint {
     isFreePoint() {
         return false;
     }
+
+    // change the selection criterion
+    setSelectionCriterion(selectionCriterion) {
+        this._selectionCriterion = selectionCriterion;
+        this.recalc();
+    }
+
+    // get the selection criterion
+    getSelectionCriterion(selectionCriterion) {
+        return this._selectionCriterion;
+    }
     
     // recalculate the coordinates
     recalcMe() {
@@ -1393,11 +1423,8 @@ class DGIntersectPoint extends DGPoint {
         this._valid = this._intersections.valid();
         if (!this._valid)
             return;
-        try {
-            this._coords = this._intersections.selectPoint(this._selectionCriterion);
-        } catch (err) {
-            this._valid = false;
-        }
+        this._coords = this._intersections.selectPoint(this._selectionCriterion);
+        this._valid = this._coords != null;
     }
 }
 
@@ -1465,8 +1492,8 @@ class DGIf extends DGObject {
     }
 
     setStyle(style, redraw) {
-        this._thenObject.setStyle(st, NO_REDRAW);
-        this._elseObject.setStyle(st, redraw);
+        this._thenObject.setStyle(style, NO_REDRAW);
+        this._elseObject.setStyle(style, redraw);
     }
 
     fix() {
@@ -1509,6 +1536,10 @@ class DGIf extends DGObject {
         return this._object.distance(other);
     }
 
+    center() {
+        return this._object.center();
+    }
+
     intersect(l) {
         return this._object.intersect(l);
     }
@@ -1523,15 +1554,14 @@ class DGIf extends DGObject {
 
     recalcMe() {
         this._valid = this._dependencies.every(obj => obj.valid());
-        if (!this._valid)
-            return;
 
-        if (this._condition(...this._dependencies)) {
+        if (!this._valid || this._condition(...this._dependencies)) {
             this._object = this._thenObject;
         } else {
             this._object = this._elseObject;
         }
-        this._valid = this._object.valid();
+        
+        this._valid = this._valid && this._object.valid();
     }
 
     valid() {
@@ -1562,7 +1592,7 @@ class DGIf extends DGObject {
 // Poincare disc elements
 // -----------------------------------------------------------------------------
 
-class DGPoincareLine extends DGCircline {
+class DGPoincareDiscLine extends DGCircline {
     constructor(p1, p2) {
         super();
         this._p1 = p1;
@@ -1575,7 +1605,7 @@ class DGPoincareLine extends DGCircline {
     }
 
     type() {
-        return "poincare line";
+        return "Poincare line";
     }
 
     defaultDescription() {
@@ -1588,11 +1618,11 @@ class DGPoincareLine extends DGCircline {
             return;
         const u = this._p1.cp1().to_complex();
         const v = this._p2.cp1().to_complex();
-        this._circline = Circline.mk_poincare_line(u, v);
+        this._circline = PoincareDisc.mk_line(u, v);
     }
 }
 
-class DGPoincareCircleR extends DGCircline {
+class DGPoincareDiscCircleR extends DGCircline {
     constructor(c, r) {
         super();
         this._c = c;
@@ -1607,7 +1637,7 @@ class DGPoincareCircleR extends DGCircline {
     }
 
     type() {
-        return "poincare circle";
+        return "Poincare circle";
     }
 
     defaultDescription() {
@@ -1628,16 +1658,16 @@ class DGPoincareCircleR extends DGCircline {
             return;
         }
         const u = this._c.cp1().to_complex();
-        this._circline = Circline.mk_poincare_circle(u, r);
+        this._circline = PoincareDisc.mk_circle(u, r);
     }
 }
 
-class DGPoincareCircle extends DGPoincareCircleR {
+class DGPoincareDiscCircle extends DGPoincareDiscCircleR {
     constructor(c, p) {
         function r(c, p) {
             const u = c.to_complex();
             const v = p.to_complex();
-            return Math.acosh(1 + (2 * u.sub(v).norm2()) / ((1 - u.norm2())* (1 - v.norm2())));
+            return PoincareDisc.hdist(u, v);
         }
         super(c, new DGNum((c, p) => r(c, p), [c, p]));
         // if the point p moves, this circle must be updated
@@ -1648,7 +1678,7 @@ class DGPoincareCircle extends DGPoincareCircleR {
     }
 
     type() {
-        return "poincare circle";
+        return "Poincare circle";
     }
 
     defaultDescription() {
@@ -1656,5 +1686,104 @@ class DGPoincareCircle extends DGPoincareCircleR {
     }
 }
 
-export { DGObject, DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGConst, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR, REDRAW, NO_REDRAW };
+// -----------------------------------------------------------------------------
+// Poincare upper half plane elements
+// -----------------------------------------------------------------------------
+
+class DGPoincareHalfPlaneLine extends DGCircline {
+    constructor(p1, p2) {
+        super();
+        this._p1 = p1;
+        this._p2 = p2;
+        // if any of the two points move, this line must be updated
+        p1.addDependent(this);
+        p2.addDependent(this);
+        // initialize the internal circline representation (Hermitean matrix)
+        this.recalcMe();
+    }
+
+    type() {
+        return "Poincare line";
+    }
+
+    defaultDescription() {
+        return "Poincare line " + this._p1.label() + this._p2.label();
+    }
+
+    recalcMe() {
+        this._valid = this._p1.valid() && this._p2.valid();
+        if (!this._valid)
+            return;
+        const u = this._p1.cp1().to_complex();
+        const v = this._p2.cp1().to_complex();
+        this._circline = PoincareHalfPlane.mk_line(u, v);
+    }
+}
+
+class DGPoincareHalfPlaneCircleR extends DGCircline {
+    constructor(c, r) {
+        super();
+        this._c = c;
+        this._r = r;
+        // if the center moves, this circle must be updated
+        c.addDependent(this);
+        // if r is symbolic and it changes, this circle must be updated
+        if (r instanceof DGNum)
+            r.addDependent(this);
+        // initialize the circline
+        this.recalcMe();
+    }
+
+    type() {
+        return "Poincare circle";
+    }
+
+    defaultDescription() {
+        return "Poincare circle c(" + this._c.label() + ", " + this.r() + ")";
+    }
+
+    r() {
+        return this._r instanceof DGNum ? this._r.value() : this._r;
+    }
+
+    recalcMe() {
+        this._valid = this._c.valid() && (!(this._r instanceof DGNum) || this._r.valid());
+        if (!this._valid)
+            return;
+        const r = this.r();
+        if (r <= 0) {
+            this._valid = false;
+            return;
+        }
+        const u = this._c.cp1().to_complex();
+        this._circline = PoincareHalfPlane.mk_circle(u, r);
+    }
+}
+
+class DGPoincareHalfPlaneCircle extends DGPoincareHalfPlaneCircleR {
+    constructor(c, p) {
+        function r(c, p) {
+            const u = c.to_complex();
+            const v = p.to_complex();
+            return PoincareHalfPlane.hdist(u, v);
+        }
+        super(c, new DGNum((c, p) => r(c, p), [c, p]));
+        // if the point p moves, this circle must be updated
+        this._p = p;
+        p.addDependent(this);
+        // initialize the circline
+        this.recalcMe();
+    }
+
+    type() {
+        return "Poincare circle";
+    }
+
+    defaultDescription() {
+        return "Poincare circle c(" + this._c.label() + ", " + this._p.label() + ")";
+    }
+}
+
+
+export { DGObject, DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGConst, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareDiscLine, DGPoincareDiscCircle, DGPoincareDiscCircleR, DGPoincareHalfPlaneLine, DGPoincareHalfPlaneCircleR, DGPoincareHalfPlaneCircle, REDRAW, NO_REDRAW };
 

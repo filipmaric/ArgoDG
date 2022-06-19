@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../../dist/DG.js"></script>
+    <script src="../../dist/RCP_HP.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    
+    <script type="module">
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, -1.2, 1.2, -1.2, 1.2);
+
+      const abs = RCP_HP.absolute.width("3");
+      
+      const A = RCP_HP.point(-0.7248, 0.456).label("A");
+      const B = RCP_HP.point(0.0384, 0.1208).label("B");
+      const C = RCP_HP.point(0.912, 0.8736).label("C");
+
+      const NO_REDRAW = false;
+
+      const a = RCP_HP.line(B, C, NO_REDRAW).label("a", NO_REDRAW);
+      const b = RCP_HP.line(A, C, NO_REDRAW).label("b", NO_REDRAW);
+      const c = RCP_HP.line(A, B, NO_REDRAW).label("c", NO_REDRAW);
+
+      const Ma = RCP_HP.midpoint(B, C, NO_REDRAW).color("green", NO_REDRAW).label("M_{a}", NO_REDRAW);
+      const Mb = RCP_HP.midpoint(A, C, NO_REDRAW).color("green", NO_REDRAW).label("M_{b}", NO_REDRAW);
+      const Mc = RCP_HP.midpoint(A, B, NO_REDRAW).color("green", NO_REDRAW).label("M_{c}", NO_REDRAW);
+      const ba = RCP_HP.bisector(B, C, NO_REDRAW).color("blue", NO_REDRAW).label("b_{a}", NO_REDRAW);
+      const bb = RCP_HP.bisector(A, C, NO_REDRAW).color("blue", NO_REDRAW).label("b_{b}", NO_REDRAW);
+      const bc = RCP_HP.bisector(A, B, NO_REDRAW).color("blue", NO_REDRAW).label("b_{c}", NO_REDRAW);
+      const O = RCP_HP.intersectLL(ba, bb, NO_REDRAW).color("blue", NO_REDRAW).label("O", NO_REDRAW);
+      
+      const o = RCP_HP.circle(O, A, NO_REDRAW).color("blue", NO_REDRAW).label("o").width(2);
+
+      // altitudes
+      const ha = RCP_HP.drop_perp(a, A, NO_REDRAW).color("red", NO_REDRAW).label("h_{a}", NO_REDRAW);
+      const hb = RCP_HP.drop_perp(b, B, NO_REDRAW).color("red", NO_REDRAW).label("h_{b}", NO_REDRAW);
+      const hc = RCP_HP.drop_perp(c, C, NO_REDRAW).color("red", NO_REDRAW).label("h_{c}", NO_REDRAW);
+
+      // orthocenter
+      const H = RCP_HP.intersectLL(ha, hb, NO_REDRAW).color("red", NO_REDRAW).label("H", NO_REDRAW);
+
+      // altitude feet
+      const Ha = RCP_HP.intersectLL(ha, a, NO_REDRAW).color("red", NO_REDRAW).label("H_{a}", NO_REDRAW);
+      const Hb = RCP_HP.intersectLL(hb, b, NO_REDRAW).color("red", NO_REDRAW).label("H_{b}", NO_REDRAW);
+      const Hc = RCP_HP.intersectLL(hc, c, NO_REDRAW).color("red", NO_REDRAW).label("H_{c}", NO_REDRAW);
+
+      // medians
+      const ma = RCP_HP.line(A, Ma, NO_REDRAW).color("green", NO_REDRAW).label("m_{a}", NO_REDRAW);
+      const mb = RCP_HP.line(B, Mb, NO_REDRAW).color("green", NO_REDRAW).label("m_{b}", NO_REDRAW);
+      const mc = RCP_HP.line(C, Mc, NO_REDRAW).color("green", NO_REDRAW).label("m_{c}", NO_REDRAW);
+
+      // centroid
+      const G = RCP_HP.intersectLL(ma, mb, NO_REDRAW).color("green", NO_REDRAW).label("G", NO_REDRAW);
+
+      const MaMb = RCP_HP.line(Ma, Mb, NO_REDRAW).color("DarkTurquoise", NO_REDRAW).label("MaMb", NO_REDRAW);
+      const MaMc = RCP_HP.line(Ma, Mc, NO_REDRAW).color("DarkTurquoise", NO_REDRAW).label("MaMc", NO_REDRAW);
+      const MbMc = RCP_HP.line(Mb, Mc, NO_REDRAW).color("DarkTurquoise", NO_REDRAW).label("MbMc", NO_REDRAW);
+
+      const ta = RCP_HP.angle_bisector(B, A, C, NO_REDRAW).color("orange", NO_REDRAW).label("t_{a}", NO_REDRAW);
+      const tb = RCP_HP.angle_bisector(A, B, C, NO_REDRAW).color("orange", NO_REDRAW).label("t_{b}", NO_REDRAW);
+      const tc = RCP_HP.angle_bisector(B, C, A, NO_REDRAW).color("orange", NO_REDRAW).label("t_{c}", NO_REDRAW);
+    
+      // incenter
+      const I = RCP_HP.intersectLL(ta, tb, NO_REDRAW).color("orange", NO_REDRAW).label("I", NO_REDRAW);
+
+      // incenter perpendicular projections onto triangle sides
+      const tpa = RCP_HP.drop_perp(a, I, NO_REDRAW).color("Chocolate", NO_REDRAW).label("t'_{a}", NO_REDRAW);
+      const tpb = RCP_HP.drop_perp(b, I, NO_REDRAW).color("Chocolate", NO_REDRAW).label("t'_{b}", NO_REDRAW);
+      const tpc = RCP_HP.drop_perp(c, I, NO_REDRAW).color("Chocolate", NO_REDRAW).label("t'_{c}", NO_REDRAW);
+      
+      // incenter projection feet
+      const Tpa = RCP_HP.intersectLL(tpa, a, NO_REDRAW).color("Chocolate", NO_REDRAW).label("T'_{a}", NO_REDRAW);
+      const Tpb = RCP_HP.intersectLL(tpb, b, NO_REDRAW).color("Chocolate", NO_REDRAW).label("T'_{b}", NO_REDRAW);
+      const Tpc = RCP_HP.intersectLL(tpc, c, NO_REDRAW).color("Chocolate", NO_REDRAW).label("T'_{c}", NO_REDRAW);
+
+    // angle bisector feet
+    const Ta = RCP_HP.intersectLL(ta, a, NO_REDRAW).color("orange", NO_REDRAW).label("T_{a}", NO_REDRAW);
+    const Tb = RCP_HP.intersectLL(tb, b, NO_REDRAW).color("orange", NO_REDRAW).label("T_{b}", NO_REDRAW);
+    const Tc = RCP_HP.intersectLL(tc, c, NO_REDRAW).color("orange", NO_REDRAW).label("T_{c}", NO_REDRAW);
+      
+      // incircle
+      const i = RCP_HP.circle(I, Tpa, NO_REDRAW).color("orange", NO_REDRAW).label("i", NO_REDRAW);
+
+      const AB = RCP_HP.segment(A, B).width(3).color("orange");
+      const AC = RCP_HP.segment(A, C).width(3).color("orange");
+      const BC = RCP_HP.segment(B, C).width(3).color("orange");
+
+      console.log("A"); console.log(A.coords());
+      console.log("B"); console.log(B.coords());
+      console.log("C"); console.log(C.coords());
+      
+      console.log("Ma"); console.log(Ma.coords());
+      console.log("Mb"); console.log(Mb.coords());
+      console.log("Mc"); console.log(Mc.coords());
+      
+      console.log("Ha"); console.log(Ha.coords());
+      console.log("Hb"); console.log(Hb.coords());
+      console.log("Hc"); console.log(Hc.coords());
+
+      console.log("O"); console.log(O.coords());
+      console.log("I"); console.log(I.coords());
+      console.log("G"); console.log(G.coords());
+      console.log("H"); console.log(H.coords());
+
+      console.log("Ta"); console.log(Ta.coords());
+      console.log("Tb"); console.log(Tb.coords());
+      console.log("Tc"); console.log(Tc.coords());
+      
+    </script>
+  </body>
+</html>

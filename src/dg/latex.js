@@ -1,6 +1,6 @@
 function fixpointReplace(str, re, replacement) {
     while(true) {
-        const newStr = str.replaceAll(re, replacement);
+        const newStr = str.replace(re, replacement);
         if (newStr == str)
             return str;
         str = newStr;
@@ -8,7 +8,7 @@ function fixpointReplace(str, re, replacement) {
 }
 
 function normalizeBraces(str) {
-    return str ? str.replace(/([\w'()]+)_(\w)/g, '$1_{$2}') : "";
+    return str ? fixpointReplace(str, /([\w'()]+)_(\w)/g, '$1_{$2}') : "";
 }
 
 function laTeX2HTML(str) {
@@ -21,18 +21,31 @@ function removeLaTeX(str) {
 
 function splitSubscript(str) {
     if (!str)
-        return [];
-    
-    const m = normalizeBraces(str).match(/^([\w'()]+)(_{([\w{}]+)})?([\w'()]+)?$/);
-    if (!m)
-        return str;
+        return {};
 
-    let result = {text: m[1]};
-    if (m[3])
-        result.subscript = m[3];
-    if (m[4])
-        result.rest = m[4];
+    str = normalizeBraces(str);
 
+    let i = 0;
+    while (i < str.length && str[i] != "_")
+        i++;
+    let result = {text: str.substring(0, i)};
+    i++;
+    let braces = 0;
+    const subscriptStart = i + 1;
+    while (i < str.length) {
+        if (str[i] == '{')
+            braces++;
+        if (str[i] == '}')
+            braces--;
+        if (braces == 0) {
+            const subscriptEnd = i - 1;
+            result.subscript = str.substring(subscriptStart, subscriptEnd + 1);
+            if (i + 1 < str.length)
+                result.rest = str.substring(i+1);
+            return result;
+        }
+        i++;
+    }
     return result;
 }
 

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>A, Ma, Hb</title>
+    <script src="../../dist/DG.js"></script>
+    <script src="../../dist/RCP.js"></script>
+  </head>
+  <body>
+    <h1>A, M<sub>a</sub>, H<sub>b</sub></h1>
+    
+    <div id="mycanvas"></div>
+    
+    <script type="module">
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, -1.2, 1.2, -1.2, 1.2);
+
+      const abs = RCP.absolute.width("3"); 
+
+      const A = RCP.point(-0.6222222222222222, -0.3333333333333333).label("A");
+      const Ma = RCP.point(-0.3048658863118876, 0.3032869642399385).label("M_a").color("green");
+      const Hb = RCP.point(-0.48620607687965234, 0.00835770312060663).label("H_b").color("red");
+
+      const b = RCP.line(A, Hb).label("b");
+      const hb = RCP.drop_perp(b, Hb).label("h_b");
+      const sMab_perp = RCP.drop_perp(b, Ma).dashed().color("purple").opacity(0.5).description("Common perpendicular of b and s_{M_a}(b)");
+      const sMab = RCP.reflectP_line(Ma, b).label("s_{M_a}(b)");
+      const B = RCP.intersectLL(hb, sMab).label("B");
+      const C = RCP.reflectP(Ma, B).label("C");
+      const sa = RCP.segment(B, C).width(2);
+      const sb = RCP.segment(A, C).width(2);
+      const sc = RCP.segment(A, B).width(2);
+
+      DG.animationButtons();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title>A, Ma, Hb</title>
+    <script src="../../dist/DG.js"></script>
+    <script src="../../dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, Ma, Hb</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    const A  = RC.point(80, 95).label("A").size(1.2);
+    const Ma = RC.point(65, 40).label("M_a").color("green");
+    const Hb = RC.point(89.36, 77.83).label("H_b").color("red");
+    const b  = RC.line(A, Hb).label("b");
+    const k  = RC.circle(Ma, Hb).color("orange");
+    const C  = RC.intersectLC_other(b, k, Hb).label("C").size(1.2);
+    const B  = RC.reflectP(Ma, C).label("B").size(1.2);
+    const BHb = RC.segment(B, Hb).color("orange").dashed().opacity(0.5);
+    const AB = RC.segment(A, B).width(3);
+    const AC = RC.segment(A, C).width(3);
+    const BC = RC.segment(B, C).width(3);
+
+    DG.animationButtons();
+  </script>
+</body>
+</html>

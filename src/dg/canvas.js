@@ -43,7 +43,9 @@ class Canvas {
             this._canvas.style.height = options.height + "px";
         }
 
-        this.context().scale(ratio, ratio);
+        this._ctx = this._canvas.getContext("2d");
+
+        this._ctx.scale(ratio, ratio);
         
         if (options.border)
             this._canvas.style.border = options.border;
@@ -54,17 +56,22 @@ class Canvas {
 
         // add status line paragraph
         const p = document.createElement("p");;
+        p.id = "status-line";
         this._p_status = p;
-        const divContainer = document.createElement("div");
-        this._canvas.parentNode.replaceChild(divContainer, this._canvas);
-        divContainer.style.position = "relative";
-        divContainer.append(this._canvas);
-        divContainer.append(p);
+        this._canvas_container = document.createElement("div");
+        this._canvas.parentNode.replaceChild(this._canvas_container, this._canvas);
+        this._canvas_container.style.position = "relative";
+        this._canvas_container.append(this._canvas);
+        this._canvas_container.append(p);
         p.style.position = "absolute";
         p.style.top = "0px";
         p.style.left = "0px";
         p.style.margin = "5px";
-        p.style.backgroundColor = "white";
+        p.style.display = "none";
+    }
+
+    addElement(e) {
+        this._canvas_container.append(e);
     }
 
     canvas() {
@@ -90,7 +97,7 @@ class Canvas {
     }
 
     context() {
-        return this._canvas.getContext("2d");
+        return this._ctx;
     }
 
     clear() {
@@ -312,7 +319,7 @@ class Canvas {
             x = x1l;
             y = this.height() - offset;
         }
-        this.latex(x, y, label, "15px Arial", color);
+        this.latex(x + 1, y, label, "15px Arial", color);
     }
 
     fixRightMargin(x, txt, font) {
@@ -326,10 +333,8 @@ class Canvas {
     }
 
     latex(x, y, txt, font, color) {
-        const ctx = this.context();
-        ctx.font = font || "15px Arial";
-
-        x = this.fixRightMargin(x, txt, ctx.font);
+        font = font || "15px Arial";
+        x = this.fixRightMargin(x, txt, font);
 
         function reduceFont(font, df) {
             const m = font.match(/^(\d+)((\w|\s)+)$/)
@@ -342,11 +347,11 @@ class Canvas {
             return this.text(x, y, txt, font, color);
         else {
             const x1 = this.text(x, y, m.text, font, color);
-            const x2 = this.latex(x1, y + 2, m.subscript, reduceFont(ctx.font, 2), color);
+            const x2 = this.latex(x1, y + 2, m.subscript, reduceFont(font, 2), color);
             if (!m.rest)
                 return x2;
             
-            return this.latex(x2, y + 2, m.rest, ctx.font, color);
+            return this.latex(x2, y, m.rest, font, color);
         }
     }
     
@@ -373,6 +378,10 @@ class Canvas {
     message(msg) {
         // this.text(5, 15, msg, "15px Arial", "black");
         this._p_status.innerHTML = laTeX2HTML(msg);
+        if (msg != "") {
+            this._p_status.style.display = "block";
+        } else 
+            this._p_status.style.display = "none";
     }
 
     addMessage(msg) {

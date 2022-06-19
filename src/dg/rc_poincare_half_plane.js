@@ -1,33 +1,42 @@
 import * as DG from './dg.js';
-import { Circline } from '../complex_geom.js';
+import * as RC from './rc.js';
+import { Circline, Complex } from '../complex_geom.js';
 import { REDRAW, NO_REDRAW } from './objects.js';
 
-const unit_circle = Circline.unit_circle();
-const in_disc = p => unit_circle.in_disc(p);
+const x_axis = Circline.x_axis();
+const disc_up = Circline.mk_circle(new Complex(0, 10), 10);
 const absolute = (function() {
     const O = DG.point(0, 0).hide(NO_REDRAW);
-    const X = DG.point(0, 1).hide(NO_REDRAW);
-    const abs = DG.circle(O, X, NO_REDRAW).label("abs");
-    abs.description("absolute", REDRAW);
-    return abs;
+    const A = DG.point(1, 0).hide(NO_REDRAW);
+    const a = DG.line(O, A).label("abs", NO_REDRAW).hideLabel();
+    a.description("absolute", REDRAW)
+    return a;
 })();
+const in_plane = p => { return !x_axis.in_disc(p); }
 
-
-// free point (must be in the unit disc)
+// free point (must be in the upper plane)
 function point(x, y, redraw) {
-    return DG.point(x, y, redraw, in_disc);
+    return DG.point(x, y, redraw, in_plane);
 }
 
 const free = point;
 
 // line AB
 function line(A, B, redraw) {
-    return DG.poincareDiscLine(A, B, redraw);
+    return DG.poincareHalfPlaneLine(A, B);
+    /*
+    const b = RC.bisector(A, B).hide(NO_REDRAW);
+    const O = DG.intersectLL(b, absolute).hide(NO_REDRAW);
+    const c = DG.circle(O, A, NO_REDRAW);
+    const l = DG.line(A, B, NO_REDRAW);
+    const res = DG.If(O => O.cp1().is_inf(), l, c, [O]);
+    return res;
+    */
 }
 
 // intersection of lines l1 and l2
 function intersectLL(l1, l2, redraw) {
-    return DG.intersectCC_select(l1, l2, in_disc, redraw);
+    return DG.intersectCC_select(l1, l2, in_plane, redraw);
 }
 
 // both intersections of line l and circle c
@@ -40,9 +49,44 @@ function intersectLC_other(l, c, A, redraw) {
     return DG.intersectCC_select(l, c, p => !p.eq(A), redraw);
 }
 
-// circle centered at O containing A
+// circle O, A
 function circle(O, A, redraw) {
-    return DG.poincareDiscCircle(O, A, redraw);
+    return DG.poincareHalfPlaneCircle(O, A);
+    
+    /*
+    const c = line(O, A, NO_REDRAW).hide(NO_REDRAW);
+    function nondeg() {
+        const p = RC.drop_perp(absolute, O, NO_REDRAW).hide(NO_REDRAW);
+        const [t1, t2] = RC.tangents(A, c, NO_REDRAW).map(t => t.hide(NO_REDRAW));
+        const OO = RC.intersectLL(p, t1, NO_REDRAW).hide(NO_REDRAW);
+        return RC.circle(OO, A, NO_REDRAW).hide(NO_REDRAW);
+    }
+
+    function deg_O_above() {
+        const M = RC.intersectLL(absolute, c, NO_REDRAW).hide(NO_REDRAW);
+        const cMO = RC.circle(M, O, NO_REDRAW).hide(NO_REDRAW);
+        const lA = RC.parallel(absolute, A, NO_REDRAW).hide(NO_REDRAW);
+
+        const [X1, X2] = RC.intersectLC_both(lA, cMO, NO_REDRAW, true).map(obj => obj.hide(NO_REDRAW));
+        const [t1, t2] = RC.tangents(X1, cMO, NO_REDRAW).map(obj => obj.hide(NO_REDRAW));
+        const Y = RC.intersectLL(t1, c, NO_REDRAW).hide(NO_REDRAW);
+        const OO = RC.midpoint(Y, A, NO_REDRAW).hide(NO_REDRAW);
+        return RC.circle(OO, A, NO_REDRAW).hide(NO_REDRAW);
+    }
+
+    function deg_O_below() {
+        const M = RC.intersectLL(absolute, c, NO_REDRAW).hide(NO_REDRAW);
+        const cMO = RC.circle(M, O, NO_REDRAW).hide(NO_REDRAW);
+        const [X1, X2] = RC.points_of_tangency(A, cMO, NO_REDRAW).map(obj => obj.hide(NO_REDRAW));
+        const lA = RC.parallel(absolute, X1, NO_REDRAW).hide(NO_REDRAW);
+        const Y = RC.intersectLL(lA, c, NO_REDRAW).hide(NO_REDRAW);
+        const OO = RC.midpoint(Y, A, NO_REDRAW).hide(NO_REDRAW);
+        return RC.circle(OO, A, NO_REDRAW).hide(NO_REDRAW);
+    }
+    
+    const deg = DG.If((O, A) => O.y() < A.y(), deg_O_below(), deg_O_above(), [O, A], NO_REDRAW);
+    return DG.If((O, A, c) => c.isLine(), deg, nondeg(), [O, A, c], redraw);
+    */
 }
 
 // both intersection of circles c1 and c2
@@ -58,6 +102,8 @@ function intersectCC_other(c1, c2, A, redraw) {
 // bisector of segment AB
 function bisector(A, B, redraw) {
     const c1 = circle(A, B, NO_REDRAW).hide(NO_REDRAW);
+    if (!c1.valid())
+        return;
     const c2 = circle(B, A, NO_REDRAW).hide(NO_REDRAW);
     const [X1, X2] = intersectCC_both(c1, c2, NO_REDRAW).map(p => p.hide(NO_REDRAW));
     const m = line(X1, X2, NO_REDRAW);
@@ -88,7 +134,7 @@ function circle_over_segment(A, B, redraw) {
 
 // line perpendicular to line l containing point A
 function drop_perp(l, A, redraw) {
-    const B = DG.randomPointOnCircle(l, NO_REDRAW, p => true, unit_circle).hide(NO_REDRAW); // FIXME: diffferent from A
+    const B = DG.randomPointOnCircle(l, NO_REDRAW, p => !p.eq(A), disc_up).hide(NO_REDRAW);
     const c = circle(A, B, NO_REDRAW).hide(NO_REDRAW);
     const [X1, X2] = intersectLC_both(l, c, NO_REDRAW).map(p => p.hide(NO_REDRAW));
     const m = bisector(X1, X2, NO_REDRAW);
@@ -127,8 +173,8 @@ function reflectL(l, A, redraw) {
 
 // reflection of line l around point O 
 function reflectP_line(O, l, redraw) {
-    var B1 = DG.randomPointOnCircle(l, NO_REDRAW, p => true, unit_circle).hide();
-    var B2 = DG.randomPointOnCircle(l, NO_REDRAW, p => !B1.eq(p), unit_circle).hide();
+    var B1 = DG.randomPointOnCircle(l, NO_REDRAW, p => true, x_axis.opposite()).hide();
+    var B2 = DG.randomPointOnCircle(l, NO_REDRAW, p => !B1.eq(p), x_axis.opposite()).hide();
     var B1p = reflectP(O, B1, NO_REDRAW).hide(NO_REDRAW);
     var B2p = reflectP(O, B2, NO_REDRAW).hide(NO_REDRAW);
     var lp = line(B1p, B2p, NO_REDRAW);
@@ -150,7 +196,7 @@ function touching_circle(A, l, redraw) {
 // both tangents from point A that touch circle c centered at O
 // FIXME: remove parameter O
 function tangents_both(A, O, c, redraw) {
-    var T = DG.randomPointOnCircle(c, NO_REDRAW, p => true, unit_circle).hide();
+    var T = DG.randomPointOnCircle(c, NO_REDRAW, p => true, disc_up).hide();
     var ot = line(O, T, NO_REDRAW).hide(NO_REDRAW);
     var t = drop_perp(ot, T, NO_REDRAW).hide(NO_REDRAW);
     var cA = circle(O, A, NO_REDRAW).hide(NO_REDRAW);
@@ -197,7 +243,7 @@ function angle_bisector(B, A, C, redraw) {
     const k = circle(A, B, NO_REDRAW).hide(NO_REDRAW);
     const c = line(A, B, NO_REDRAW).hide(NO_REDRAW);
     const b = line(A, C, NO_REDRAW).hide(NO_REDRAW);
-    const X = DG.intersectCC_select(b, k, p => !Circline.h_between(p, A, C), NO_REDRAW).hide(NO_REDRAW);
+    const X = DG.intersectCC_select(b, k, p => !Circline.h_between_hp(p, A, C), NO_REDRAW).hide(NO_REDRAW);
     const k1 = circle(B, X, NO_REDRAW).hide(NO_REDRAW);
     const k2 = circle(X, B, NO_REDRAW).hide(NO_REDRAW);
     const Y = DG.intersectCC_any(k1, k2, NO_REDRAW).hide(NO_REDRAW);
@@ -329,6 +375,8 @@ export {
     bisector,
     drop_perp,
     foot,
+
+    angle_bisector,
 
     hyperparallel,
 

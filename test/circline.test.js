@@ -1,4 +1,4 @@
-const { Circline, Complex, CP1, Moebius }  = require('../src/complex_geom.js');
+const { Circline, Complex, CP1, Moebius, ComplexMatrix2x2 }  = require('../src/complex_geom.js');
 
 test('mk_line', () => {
     expect(Circline.mk_line(Complex.zero, Complex.one).eq(Circline.x_axis())).toBeTruthy();
@@ -247,3 +247,4 @@ test('cosAngle', () => {
     expect(Circline.cosAngle(M.moebius_circline(Circline.x_axis()), M.moebius_circline(Circline.y_axis()))).toBeCloseTo(0, 1e-12);
     expect(Math.abs(Circline.cosAngle(M.moebius_circline(Circline.y_axis()), M.moebius_circline(yeqx)))).toBeCloseTo(Math.sqrt(2)/2, 1e-12);
 });
+

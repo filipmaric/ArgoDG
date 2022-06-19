@@ -1,6 +1,6 @@
 import * as DG from './dg.js';
-import * as RCP from './rc_poincare.js';
-import { Complex, CP1, Circline, PoincareDisc } from '../complex_geom.js';
+import * as RCP_HP from './rc_poincare_half_plane.js';
+import { Complex, CP1, Circline, PoincareHalfPlane } from '../complex_geom.js';
 import { REDRAW, NO_REDRAW } from './objects.js';
 
 function dist(A, B) {
@@ -12,11 +12,13 @@ function dist(A, B) {
 function hdist(A, B) {
     const u = A.to_complex();
     const v = B.to_complex();
-    return PoincareDisc.hdist(u, v);
+    
+    return PoincareHalfPlane.hdist(u, v);
 }
 
+
 function hyp_cosPhi(A, B, C) {
-    return PoincareDisc.cosPhi(A.to_complex(), B.to_complex(), C.to_complex());
+    return PoincareHalfPlane.cosPhi(A.to_complex(), B.to_complex(), C.to_complex());
 }
     
 function cosPhi(A, B, C) {
@@ -50,15 +52,15 @@ function ratio(P, Q, r, redraw) {
     }, [P, Q, r], NO_REDRAW).hide(NO_REDRAW);
     const k = DG.circle(C1, C2, NO_REDRAW).hide(NO_REDRAW);
     const h = line(P, Q, NO_REDRAW).hide(NO_REDRAW);
-    const X = DG.intersectCC_select(h, k, p => Circline.h_between(P, p, Q), NO_REDRAW).hide(NO_REDRAW);
-    const M = RCP.midpoint(P, Q, NO_REDRAW).hide(NO_REDRAW);
+    const X = DG.intersectCC_select(h, k, p => Circline.h_between_hp(P, p, Q), NO_REDRAW).hide(NO_REDRAW);
+    const M = RCP_HP.midpoint(P, Q, NO_REDRAW).hide(NO_REDRAW);
     const res = DG.If(r => r != 1, X, M, [r]);
     res.descriptions("Point X between " + P.label() + " and " + Q.label() + " determined by ratio").show(redraw);
     return res;
 }
 
 function on_line_hdist(l, A, d, cond) {
-    const c = DG.poincareDiscCircleR(A, d, NO_REDRAW).hide(NO_REDRAW);
+    const c = DG.poincareHalfPlaneCircleR(A, d, NO_REDRAW).hide(NO_REDRAW);
     if (cond === undefined)
         return DG.intersectCC_both(l, c);
     else
@@ -67,12 +69,12 @@ function on_line_hdist(l, A, d, cond) {
 
 function C_from_ABG(A, B, G, redraw)
 {
-    const Mc = RCP.midpoint(A, B, NO_REDRAW).hide(NO_REDRAW);
-    const mc = RCP.line(Mc, G, NO_REDRAW).hide(NO_REDRAW);
+    const Mc = RCP_HP.midpoint(A, B, NO_REDRAW).hide(NO_REDRAW);
+    const mc = RCP_HP.line(Mc, G, NO_REDRAW).hide(NO_REDRAW);
     const s = DG.num((A, B, G, Mc) => 2 * Math.cosh(hdist(A, B)/2) * Math.sinh(hdist(G, Mc)), [A, B, G, Mc]);
     const r = DG.num(s => Math.asinh(s), [s]);
     // point C on line mc such that sinh(hdist(C, G)) = s and h_between(C, G, Mc)
-    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc, 1e-10));
+    const C = on_line_hdist(mc, G, r, p => Circline.h_between_hp(p, G, Mc, 1e-10));
     C.description("Calculated from centroid " + G.label() + " and vertices " + A.label() + " and " + B.label(), redraw)
     return C;
 }
@@ -92,8 +94,8 @@ function AB_from_cCGMc(c, C, G, Mc, redraw) {
 function C_from_GOMc(G, O, Mc, redraw) {
     const s = DG.num((G, O, Mc) => (Math.cosh(hdist(O, Mc)))/(2*Math.cosh(hdist(G, O))*Math.sinh(hdist(G, Mc))) - Math.tanh(hdist(G, O)) * hyp_cosPhi(Mc, G, O), [G, O, Mc]);
     const r = DG.num(s => Math.atanh(1/s), [s]);
-    const mc = RCP.line(Mc, G, NO_REDRAW).hide(NO_REDRAW);
-    const C = on_line_hdist(mc, G, r, p => Circline.h_between(p, G, Mc, 1e-10));
+    const mc = RCP_HP.line(Mc, G, NO_REDRAW).hide(NO_REDRAW);
+    const C = on_line_hdist(mc, G, r, p => Circline.h_between_hp(p, G, Mc, 1e-10));
     C.description("Calcluated from centroid " + G.label() + ", circumcenter " + O.label() + ", and midpoint " + Mc.label(), redraw);
     return C;
 }
@@ -103,8 +105,8 @@ function Mc_from_GOC(G, O, C, redraw) {
     const s = DG.num((G, O, C) => (2*Math.cosh(hdist(C, O)) / (Math.cosh(hdist(G, O))*Math.sinh(hdist(C, G)))) - Math.tanh(hdist(G, O)) * hyp_cosPhi(C, G, O), [G, O, C]);
     const r = DG.num(s => Math.atanh(1/s), [s]);
 
-    const mc = RCP.line(C, G, NO_REDRAW).hide(NO_REDRAW);
-    const Mc = on_line_hdist(mc, G, r, p => Circline.h_between(C, G, p, 1e-10));
+    const mc = RCP_HP.line(C, G, NO_REDRAW).hide(NO_REDRAW);
+    const Mc = on_line_hdist(mc, G, r, p => Circline.h_between_hp(C, G, p, 1e-10));
     
     Mc.description("Calcluated from centroid " + G.label() + ", circumcenter " + O.label() + ", and vertex " + C.label(), redraw);
     return Mc;

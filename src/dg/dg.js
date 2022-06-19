@@ -1,4 +1,4 @@
-import { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareLine, DGPoincareCircle, DGPoincareCircleR, REDRAW, NO_REDRAW } from './objects.js';
+import { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareDiscLine, DGPoincareDiscCircle, DGPoincareDiscCircleR, DGPoincareHalfPlaneLine, DGPoincareHalfPlaneCircle, DGPoincareHalfPlaneCircleR, REDRAW, NO_REDRAW } from './objects.js';
 import { View } from './view.js';
 import { Construction } from './construction.js';
 import { AnimationButtons } from './animation_buttons.js';
@@ -110,57 +110,57 @@ export function intersectLL(l1, l2, redraw) {
     return p;
 }
 
-function intersectLC(l, c, redraw) {
-    const p = new DGIntersectLC(l, c);
+function intersectLC(l, c, redraw, includeFictive) {
+    const p = new DGIntersectLC(l, c, includeFictive);
     addObject(p, redraw);
     return p;
 }
 
-export function intersectLC_both(l, c, redraw) {
-    const i = intersectLC(l, c, redraw);
+export function intersectLC_both(l, c, redraw, includeFictive) {
+    const i = intersectLC(l, c, redraw, includeFictive);
     const [p1, p2] = i.both();
     addObject(p1, false);
     addObject(p2, redraw);
     return [p1, p2];
 }
 
-export function intersectLC_any(l, c, redraw) {
-    const i = intersectLC(l, c, redraw);
+export function intersectLC_any(l, c, redraw, includeFictive) {
+    const i = intersectLC(l, c, redraw, includeFictive);
     const p = i.any();
     addObject(p, redraw);
     return p;
 }
 
-export function intersectLC_select(l, c, select_fun, redraw) {
-    const i = intersectLC(l, c, redraw);
+export function intersectLC_select(l, c, select_fun, redraw, includeFictive) {
+    const i = intersectLC(l, c, redraw, includeFictive);
     const p = i.select(select_fun);
     addObject(p, redraw);
     return p;
 }
 
-function intersectCC(c1, c2, redraw) {
-    const p = new DGIntersectCC(c1, c2);
+function intersectCC(c1, c2, redraw, includeFictive) {
+    const p = new DGIntersectCC(c1, c2, includeFictive);
     addObject(p, redraw);
     return p;
 }
 
-export function intersectCC_both(c1, c2, redraw) {
-    const i = intersectCC(c1, c2, redraw);
+export function intersectCC_both(c1, c2, redraw, includeFictive) {
+    const i = intersectCC(c1, c2, redraw, includeFictive);
     const [p1, p2] = i.both();
     addObject(p1, false);
     addObject(p2, redraw);
     return [p1, p2];
 }
 
-export function intersectCC_any(c1, c2, redraw) {
-    const i = intersectCC(c1, c2, redraw);
+export function intersectCC_any(c1, c2, redraw, includeFictive) {
+    const i = intersectCC(c1, c2, redraw, includeFictive);
     const p = i.any();
     addObject(p, redraw);
     return p;
 }
 
-export function intersectCC_select(c1, c2, select_fun, redraw) {
-    const i = intersectCC(c1, c2, redraw);
+export function intersectCC_select(c1, c2, select_fun, redraw, includeFictive) {
+    const i = intersectCC(c1, c2, redraw, includeFictive);
     const p = i.select(select_fun);
     addObject(p, redraw);
     return p;
@@ -180,25 +180,43 @@ export function If(cond, then_object, else_object, dependencies, redraw) {
 }
 
 export function center(c, redraw) {
-    const cc = c.center();
+    const cc = new DGCircleCenterPoint(c);
     addObject(cc, redraw);
     return cc;
 }
 
-export function poincareLine(p1, p2, redraw) {
-    const l = new DGPoincareLine(p1, p2);
+export function poincareDiscLine(p1, p2, redraw) {
+    const l = new DGPoincareDiscLine(p1, p2);
     addObject(l, redraw);
     return l;
 }
 
-export function poincareCircle(c, p, redraw) {
-    const pc = new DGPoincareCircle(c, p);
+export function poincareDiscCircle(c, p, redraw) {
+    const pc = new DGPoincareDiscCircle(c, p);
     addObject(pc, redraw);
     return pc;
 }
 
-export function poincareCircleR(c, r, redraw) {
-    const pc = new DGPoincareCircleR(c, r);
+export function poincareDiscCircleR(c, r, redraw) {
+    const pc = new DGPoincareDiscCircleR(c, r);
+    addObject(pc, redraw);
+    return pc;
+}
+
+export function poincareHalfPlaneLine(p1, p2, redraw) {
+    const l = new DGPoincareHalfPlaneLine(p1, p2);
+    addObject(l, redraw);
+    return l;
+}
+
+export function poincareHalfPlaneCircle(o, a, redraw) {
+    const c = new DGPoincareHalfPlaneCircle(o, a);
+    addObject(c, redraw);
+    return c;
+}
+
+export function poincareHalfPlaneCircleR(c, r, redraw) {
+    const pc = new DGPoincareHalfPlaneCircleR(c, r);
     addObject(pc, redraw);
     return pc;
 }

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>Ma, Mb, Mc</title>
+    <script src="../../dist/DG.js"></script>
+    <script src="../../dist/RCP_HP.js"></script>
+  </head>
+  <body>
+    <h1>M<sub>a</sub>, M<sub>b</sub>, M<sub>c</sub></h1>
+    
+    <canvas id="mycanvas"></canvas>
+    
+    <script type="module">
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, -1.2, 1.2, -1.2, 1.2);
+
+      const abs = RCP_HP.absolute.width("3"); 
+      
+      const Ma = RCP_HP.point(0.1445251810135022, 0.4324110129125964).label("M_a").color("green");
+      const Mb = RCP_HP.point(-0.16344259927797958, 1.001034096400527).label("M_b").color("green");
+      const Mc = RCP_HP.point(-0.1214380027739435, 0.38926209240859216).label("M_c").color("green");
+
+      const MaMb = RCP_HP.line(Ma, Mb).label("M_aM_b").color("DarkTurquoise");
+      const c = RCP_HP.hyperparallel(MaMb, Mc).label("c");
+      const sMac_perp = RCP_HP.drop_perp(c, Ma).dashed().opacity(0.5).description("Common perpendicular of c and s_{M_a}(c)");
+      const sMac = RCP_HP.reflectP_line(Ma, c).label("s_{M_a}(c)");
+      
+      const sMbc_perp = RCP_HP.drop_perp(c, Mb).dashed().opacity(0.5).description("Common perpendicular of c and s_{M_b}(c)");
+      const sMbc = RCP_HP.reflectP_line(Mb, c).label("s_{M_b}(c)");
+      
+      const C = RCP_HP.intersectLL(sMac, sMbc).label("C");
+      const A = RCP_HP.reflectP(Ma, C).label("A");
+      const B = RCP_HP.reflectP(Mb, C).label("B");
+      
+      const sa = RCP_HP.segment(B, C).width(2);
+      const sb = RCP_HP.segment(A, C).width(2);
+      const sc = RCP_HP.segment(A, B).width(2);
+      
+      DG.animationButtons();
+    </script>
+  </body>
+</html>

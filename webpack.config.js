@@ -13,8 +13,16 @@ module.exports = {
             import: './src/rc_poincare.js',
             dependOn: 'DG',
         },
+        RCP_HP: {
+            import: './src/rc_poincare_half_plane.js',
+            dependOn: 'DG',
+        },        
         ANP: {
             import: './src/an_poincare.js',
+            dependOn: 'DG',
+        },
+        ANP_HP: {
+            import: './src/an_poincare_half_plane.js',
             dependOn: 'DG',
         },
     },

@@ -24,20 +24,20 @@ function segment(A, B, redraw) {
 // intersection of lines l1 and l2
 // non-deg: !parallel(l1, l2)
 // det: l1 != l2
-function intersectLL(l1, l2, redraw) {
-    return DG.intersectLL(l1, l2, redraw);
+function intersectLL(l1, l2, redraw, includeFictive) {
+    return DG.intersectLL(l1, l2, redraw, includeFictive);
 }
 
 // both intersections of line l and circle c
 // non-deg: l intersects c
-function intersectLC_both(l, c, redraw) {
-    return DG.intersectLC_both(l, c, redraw);
+function intersectLC_both(l, c, redraw, includeFictive) {
+    return DG.intersectLC_both(l, c, redraw, includeFictive);
 }
 
 // other intersection of line l and circle c (different from given point A)
 // non-deg: l intersects c (in two points)
-function intersectLC_other(l, c, A, redraw) {
-    const I = DG.intersectLC_select(l, c, p => !p.eq(A.cp1()), redraw)
+function intersectLC_other(l, c, A, redraw, includeFictive) {
+    const I = DG.intersectLC_select(l, c, p => !p.eq(A.cp1()), redraw, includeFictive)
     return I;
 }
 
@@ -50,15 +50,15 @@ function circle(C, A, redraw) {
 // both intersection of circles c1 and c2
 // non-deg: c1 intersects c2
 // det: c1 != c2
-function intersectCC_both(c1, c2, redraw) {
-    return DG.intersectCC_both(c1, c2, redraw);
+function intersectCC_both(c1, c2, redraw, includeFictive) {
+    return DG.intersectCC_both(c1, c2, redraw, includeFictive);
 }
 
 // other intersection of circles c1 and c2 (different from the given point A)
 // non-deg: c1 intersects c2 (in two different points)
 // det: c1 != c2
-function intersectCC_other(c1, c2, A, redraw) {
-    return DG.intersectCC_select(c1, c2, p => !p.eq(A.cp1()), redraw);
+function intersectCC_other(c1, c2, A, redraw, includeFictive) {
+    return DG.intersectCC_select(c1, c2, p => !p.eq(A.cp1()), redraw, includeFictive);
 }
 
 // bisector of segment AB
@@ -123,16 +123,32 @@ function touching_circle(A, l, redraw) {
     return c;
 }
 
+function points_of_tangency(A, c, redraw) {
+    const O = DG.center(c, NO_REDRAW).hide(NO_REDRAW);
+    const c1 = circle_over_segment(O, A, NO_REDRAW).hide(NO_REDRAW);
+    const [X1, X2] = intersectCC_both(c, c1, NO_REDRAW);
+    const A_on_c = (A, c) => c.circline().on_circline(A);
+    const X = A.clone();
+    return [DG.If(A_on_c, X, X1, [A, c], redraw), DG.If(A_on_c, X, X2, [A, c], redraw)];
+}
+
 // both tangents from point A that touch circle c
-// non-deg: A outside c
+// non-deg: A outside c or on c
 function tangents(A, c, redraw) {
     const O = DG.center(c, NO_REDRAW).hide(NO_REDRAW);
     const c1 = circle_over_segment(O, A, NO_REDRAW).hide(NO_REDRAW);
-    const [X1, X2] = intersectCC_both(c, c1, NO_REDRAW).map(p => p.hide(NO_REDRAW));
-    return [line(A, X1, NO_REDRAW), line(A, X2, NO_REDRAW)].map(l => l.description(
+    const [X1, X2] = intersectCC_both(c, c1, NO_REDRAW).map(obj => obj.hide(NO_REDRAW));
+    const t1 = line(A, X1, NO_REDRAW).hide(NO_REDRAW);
+    const t2 = line(A, X2, NO_REDRAW).hide(NO_REDRAW);
+    const OA = line(O, A).hide(NO_REDRAW);
+    const t = drop_perp(OA, A).hide(NO_REDRAW);
+    const A_on_c = (A, c) => c.circline().on_circline(A, 1e-8);
+    return [DG.If(A_on_c, t, t1, [A, c]), DG.If(A_on_c, t, t2, [A, c])].map(l => l.description(
         "Tangent from point " + A.label() + " to circle " + c.label(), redraw
     ));
 }
+
+
 
 // tangent from point A that touch circle c, that is different from the given line t
 // non-deg: A outside c
@@ -486,6 +502,7 @@ export {
     touching_circle,
     tangents,
     other_tangent,
+    points_of_tangency,
 
     towards,
     angle_bisector,

@@ -57,22 +57,6 @@ class Circline {
                             B.cnj(), Complex.cnj_mix(B.uminus(), z1));
     }
 
-    // Circline that represents a Poincare disc line that joins two given (finite) complex numbers
-    // inside the disc
-    static mk_poincare_line(z1, z2) {
-        const A = Complex.i.mult((z1.mult(z2.cnj())).sub(z2.mult(z1.cnj())));
-        const B = Complex.i.mult(z2.scale(z1.norm2() + 1).sub(z1.scale(z2.norm2() + 1)));
-        return new Circline(A, B, B.cnj(), A);
-    }
-
-    // Circline that represents a Poincare circle that is centered in a (finite) complex number a
-    // and has the radius r
-    static mk_poincare_circle(a, r) {
-        const ae = a.scale(1 / ((1 - a.norm2())*(Math.cosh(r) - 1)/2 + 1));
-        const re = ((1 - a.norm2()) * Math.sinh(r)) / ((1 - a.norm2()) * (Math.cosh(r) - 1) + 2);
-        return Circline.mk_circle(ae, re);
-    }
-
     // Circline determined by tree points (either complex or CP1)
     static mk_circline3(z1, z2, z3) {
         if (!(z1 instanceof CP1)) z1 = z1.cp1();
@@ -80,6 +64,11 @@ class Circline {
         if (!(z3 instanceof CP1)) z3 = z3.cp1();
         const M = Moebius.moebius_01inf(z1, z2, z3);
         return M.inv().moebius_circline(Circline.x_axis());
+    }
+
+    // oposite oriented circline
+    opposite() {
+        return new Circline(this.H.multC(-1));
     }
 
     // several special circlines
@@ -109,6 +98,14 @@ class Circline {
     // Euclidean center of the current circline (works only if this is an Euclidean circle)
     circle_center() {
         return this.H.B.uminus().div(this.H.A);
+    }
+
+    // CP1 (euclidean center of infinity)
+    center() {
+        if (this.is_line())
+            return CP1.inf;
+        else
+            return CP1.of_complex(this.circle_center());
     }
 
     // Euclidean radius of the current circline (works only if this is an Euclidean circle)
@@ -219,6 +216,12 @@ class Circline {
         return unit_circle.in_disc(w, eps) && Circline.other_arc(w, z1, w.inversion(), z2, eps) 
     }
 
+    static h_between_hp(z1, w, z2, eps) {
+        if (!(w instanceof CP1))
+            w = w.cp1();
+        return !x_axis.in_disc(w, eps) && Circline.other_arc(w, z1, w.cnj(), z2, eps) 
+    }
+
     // cosine of the angle between two circlines
     static cosAngle(c1, c2) {
         function det12(H1, H2) {
@@ -307,7 +310,11 @@ class Circline {
             p2 = CP1.of_real(- D.re() / (2 * B.re()));
             return [p1, p2].map(p => M.moebius_inv_pt(p));
         } else {
-            const discr = B.re() * B.re() - A.re() * D.re();
+            let discr = B.re() * B.re() - A.re() * D.re();
+            ////////////////////////////////////
+            if (Math.abs(discr) < 1e-12)
+                discr = 0;
+            ////////////////////////////////////
             if (discr < 0) {
                 if (includeFictive) {
                     // fictive intersections
@@ -346,6 +353,7 @@ class Circline {
 }
 
 const unit_circle = Circline.unit_circle();
+const x_axis = Circline.x_axis();
 
 
 export { Circline };
