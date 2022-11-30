@@ -1,5 +1,42 @@
-const { Complex, CP1 } = require('../src/complex_geom.js');
-const { DGObject, DGConst, DGNum, DGPoint, DGRandomPoint, DGPointFun, DGLine, DGSegment, DGRandomPointOnCircline, DGCircle, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGClone, DGIf, REDRAW, NO_REDRAW } = require('../src/dg/objects.js');
+const { Complex, CP1, Circline, INCLUDE_FICTIVE } = require('../src/complex_geom.js');
+
+const {
+    DGObject,
+    DGPoint,
+    DGLine,
+    DGCircle,
+    DGSegment,
+    DGArc,
+    DGRandomPoint,
+    DGRandomPointOnCircline,
+    DGCircleCenterPoint,
+    DGIntersectLL,
+    DGIntersectLC,
+    DGIntersectCL,
+    DGIntersectCC,
+    
+    DGClone,
+    DGIf,
+    DGConst,
+    DGNum,
+    DGPointFun,
+    
+    
+    DGPoincareDiscLine,
+    DGPoincareDiscCircle,
+    DGPoincareDiscCircleR,
+    DGPoincareHalfPlaneLine,
+    DGPoincareHalfPlaneCircleR,
+    DGPoincareHalfPlaneCircle,
+
+    REDRAW, NO_REDRAW
+} = require('../src/dg/objects.js');
+
+const { Construction } = require('../src/dg/construction.js');
+
+const { GraphicsView } = require('../src/dg/graphics_view.js');
+jest.mock('../src/dg/graphics_view.js');
+
 
 test('show/hide', () => {
     const obj = new DGObject();
@@ -669,6 +706,7 @@ test('isPoint, isLine, isCircle', () => {
     const q2 = new DGPoint(90, 90);
     const l1 = new DGLine(q1, q2);
     const ll = new DGIntersectLL(l, l1);
+    expect(ll.valid()).toBeTruthy();
     expect(ll.isPoint()).toBeTruthy();
     expect(ll.isFreePoint()).toBeFalsy();
     expect(ll.isLine()).toBeFalsy();
@@ -676,6 +714,7 @@ test('isPoint, isLine, isCircle', () => {
 
     const c1 = new DGCircle(q1, q2);
     const cci = new DGIntersectCC(c, c1);
+    expect(cci.valid()).toBeTruthy();
     expect(cci.isPoint()).toBeFalsy();
     expect(cci.isFreePoint()).toBeFalsy();
     expect(cci.isLine()).toBeFalsy();
@@ -777,8 +816,8 @@ test('DGPoint', () => {
     expect(p.y()).toBe(120);
     expect(p.coords()).toStrictEqual([100, 120]);
     expect(p.cp1()).toStrictEqual(CP1.of_xy(100, 120));
-    expect(p.is_inf()).toBeFalsy();
-    expect(p.to_complex()).toStrictEqual(Complex.of_xy(100, 120));
+    expect(p.isInf()).toBeFalsy();
+    expect(p.toComplex()).toStrictEqual(Complex.of_xy(100, 120));
     expect(p.funArg()).toStrictEqual(CP1.of_xy(100, 120));
 
     const p1 = new DGPoint(100, 120);
@@ -816,7 +855,7 @@ test('DGPoint', () => {
 
     let ret = p1.moveTo(50, 70);
     expect(ret).toBeTruthy();
-    expect(p1.is_inf()).toBeFalsy();
+    expect(p1.isInf()).toBeFalsy();
     expect(p1.x()).toBe(50);
     expect(p1.y()).toBe(70);
     expect(p1.valid()).toBeTruthy();
@@ -887,8 +926,390 @@ test('DGLine', () => {
     const p = new DGPoint(0, 0);
     const q = new DGPoint(100, 100);
     const l = new DGLine(p, q);
-    expect(l.isNear(50, 50, (x, y) => [x, y])).toBeTruthy();
-    expect(l.isNear(-30, -30, (x, y) => [x, y])).toBeTruthy();
-    expect(l.isNear(150, 150, (x, y) => [x, y])).toBeTruthy();
-    expect(l.isNear(51, 50, (x, y) => [x, y])).toBeFalsy();
+    expect(l.isNear(50, 50)).toBeTruthy();
+    expect(l.isNear(-30, -30)).toBeTruthy();
+    expect(l.isNear(150, 150)).toBeTruthy();
+    expect(l.isNear(51, 50)).toBeFalsy();
+});
+
+
+test('DGCircle', () => {
+    const p = new DGPoint(0, 0);
+    const q = new DGPoint(0, 1);
+    const c = new DGCircle(p, q);
+    expect(c.isNear(1, 0)).toBeTruthy();
+    expect(c.isNear(1, 1)).toBeFalsy();
+    expect(c.isNear(Math.sqrt(2)/2, Math.sqrt(2)/2)).toBeTruthy();
+    expect(c.isNear(Math.sqrt(2)/2 + 1e-2, Math.sqrt(2)/2)-1e-2).toBeTruthy();
+
+    expect(c.inDisc(p)).toBeTruthy();
+    expect(c.inDiscXY(0, 0)).toBeTruthy();
+    expect(c.onCircle(q)).toBeTruthy();
+    expect(c.onCircleXY(1, 0)).toBeTruthy();
+    expect(c.onCircleXY(Math.sqrt(2)/2, Math.sqrt(2)/2)).toBeTruthy();
+    expect(c.onCircleXY(Math.sqrt(2)/2 + 1e-2, Math.sqrt(2)/2-1e-2)).toBeFalsy();
+});
+
+test('DGRandomPointOnCircline', () => {
+    const p1 = new DGPoint(0, 0);
+    const p2 = new DGPoint(1, 1);
+    const l = new DGLine(p1, p2);
+    for (let i = 1; i <= 10; i++) {
+        const p = new DGRandomPointOnCircline(l);
+        expect(p.isFreePoint()).toBeFalsy();
+        expect(p.x()).toBe(p.y());
+        expect(p.valid()).toBeTruthy();
+    }
+
+    const uc = Circline.unit_circle();
+    for (let i = 1; i <= 10; i++) {
+        const p = new DGRandomPointOnCircline(l, {disc: uc});
+        expect(p.valid()).toBeTruthy();
+        expect(p.x()).toBe(p.y());
+        expect(uc.in_disc(p)).toBeTruthy();
+    }
+
+    const vc = p => !p.is_inf() && p.to_complex().x() > 0 && p.to_complex().y() > 0;
+    for (let i = 1; i <= 10; i++) {
+        const p = new DGRandomPointOnCircline(l, {validity_check: vc});
+        expect(p.valid()).toBeTruthy();
+        expect(p.x()).toBe(p.y());
+        expect(vc(p.cp1())).toBeTruthy();
+    }
+
+    
+    for (let i = 1; i <= 10; i++) {
+        const p = new DGRandomPointOnCircline(l, {disc: uc, validity_check: vc});
+        expect(p.valid()).toBeTruthy();
+        expect(p.x()).toBe(p.y());
+        expect(uc.in_disc(p)).toBeTruthy();
+        expect(vc(p.cp1())).toBeTruthy();
+    }
+
+    const circ = new DGCircle(p1, p2);
+    for (let i = 1; i <= 10; i++) {
+        const p = new DGRandomPointOnCircline(circ);
+        expect(p.valid()).toBeTruthy();
+        expect(circ.onCircle(p)).toBeTruthy();
+    }
+
+    const disc = Circline.mk_circle(new Complex(10, 10), 1);
+    for (let i = 1; i <= 10; i++) {
+        const p = new DGRandomPointOnCircline(circ, {disc: disc});
+        expect(p.valid()).toBeFalsy();
+    }
+});
+
+test('DGIf', () => {
+    const A = new DGPoint(0, 0);
+    const B = new DGPoint(1, 1);
+    const c = new DGConst(3);
+    const X = new DGIf(c => c.value() == 3, A, B, [c]);
+    expect(X.x()).toBe(0);
+    expect(X.y()).toBe(0);
+    expect(X.coords()).toStrictEqual([0, 0]);
+    expect(X.isInf()).toBeFalsy();
+    expect(X.toComplex()).toStrictEqual(new Complex(0, 0));
+    expect(X.cp1()).toStrictEqual(CP1.of_xy(0, 0));
+    expect(X.eq(A)).toBeTruthy();
+    expect(X.eq(B)).toBeFalsy();
+
+    c.setValue(2);
+    expect(X.x()).toBe(1);
+    expect(X.y()).toBe(1);
+    expect(X.eq(B)).toBeTruthy();
+    expect(X.eq(A)).toBeFalsy();
+    
+
+    const C = new DGPoint(-1, 2);
+    const l1 = new DGLine(A, B);
+    const l2 = new DGLine(A, C);
+    expect(l1.eq(l2)).toBeFalsy();
+    const Y = new DGIf(c => c.value() == 2, l1, l2, [c]);
+    expect(Y.circline()).toBe(l1.circline());
+    expect(Y.eq(l1)).toBeTruthy();
+    expect(Y.eq(l2)).toBeFalsy();
+
+    c.setValue(3);
+    expect(Y.circline()).toBe(l2.circline());
+    expect(Y.eq(l2)).toBeTruthy();
+    expect(Y.eq(l1)).toBeFalsy();
+});
+
+test('move validity check', () => {
+    const uc = Circline.unit_circle();
+    const p = new DGPoint(0, 0, p => uc.in_disc(p));
+    expect(p.valid()).toBeTruthy();
+    expect(p.x()).toBe(0);
+    expect(p.y()).toBe(0);
+    expect(p.valid()).toBeTruthy();
+    expect(p.moveTo(0.5, 0.5)).toBeTruthy();
+    expect(p.valid()).toBeTruthy();
+    expect(p.x()).toBe(0.5);
+    expect(p.y()).toBe(0.5);
+    expect(p.moveTo(2, 2)).toBeFalsy();
+    expect(p.valid()).toBeTruthy();
+    expect(p.x()).toBe(0.5);
+    expect(p.y()).toBe(0.5);
+    p.validityCheck(null);
+    expect(p.moveTo(2, 2)).toBeTruthy();
+    expect(p.valid()).toBeTruthy();
+    expect(p.x()).toBe(2);
+    expect(p.y()).toBe(2);
+
+    const q = new DGPoint(2, 2, p => uc.in_disc(p));
+    expect(q.valid()).toBeFalsy();
+    expect(q.moveTo(0.5, 0.5)).toBeTruthy();
+    expect(q.valid()).toBeTruthy();
+    expect(q.x()).toBe(0.5);
+    expect(q.y()).toBe(0.5);
+});
+
+test('construction from invalid', () => {
+    // invalid point
+    const uc = Circline.unit_circle();
+    const p1 = new DGPoint(2, 2, p => uc.in_disc(p));
+    expect(p1.valid()).toBeFalsy();
+    const p2 = new DGPoint(0, 0);
+    expect(p2.valid()).toBeTruthy();
+    
+    const l = new DGLine(p1, p2);
+    expect(l.valid()).toBeFalsy();
+
+    const c = new DGCircle(p1, p2);
+    expect(c.valid()).toBeFalsy();
+
+    const p = new DGRandomPointOnCircline(l);
+    expect(p.valid()).toBeFalsy();
+
+    expect(p1.moveTo(0.5, 0.5)).toBeTruthy();
+    expect(p1.valid()).toBeTruthy();
+
+    expect(l.valid()).toBeTruthy();
+    expect(c.valid()).toBeTruthy();
+    expect(p.valid()).toBeTruthy();
+});
+
+test('dg if invalid condition', () => {
+    // invalid point
+    const uc = Circline.unit_circle();
+    const p = new DGPoint(2, 2, p => uc.in_disc(p));
+    expect(p.valid()).toBeFalsy();
+    const q = new DGPoint(2, 2);
+    expect(q.valid()).toBeTruthy();
+
+    const a = new DGPoint(0, 0);
+    const b = new DGPoint(1, 1);
+    const x = new DGIf((p, q) => p.eq(q), a, b, [p, q]);
+
+    expect(x.valid()).toBeFalsy()
+    expect(x._object).toBeDefined();
+    expect(x._object).not.toBeNull();
+
+    expect(p.moveTo(0.5, 0.5)).toBeTruthy();
+    expect(p.valid()).toBeTruthy();
+    expect(x.valid()).toBeTruthy();
+    expect(x._object).toBeDefined();
+    expect(x._object).not.toBeNull();
+});
+
+test('dg if invalid condition', () => {
+    // invalid point
+    const uc = Circline.unit_circle();
+    const p = new DGPoint(2, 2, p => uc.in_disc(p));
+    expect(p.valid()).toBeFalsy();
+    const q = new DGPoint(2, 2);
+    expect(q.valid()).toBeTruthy();
+
+    const a = new DGPoint(0, 0);
+    const b = new DGPoint(1, 1);
+    const x = new DGIf((a, b) => a.eq(b), p, q, [a, b]);
+    expect(x.valid()).toBeTruthy()
+    expect(x._object).toBeDefined();
+    expect(x._object).not.toBeNull();
+    
+    const y = new DGIf((a, b) => a.eq(b), q, p, [a, b]);
+    expect(y.valid()).toBeFalsy();
+    expect(y._object).toBeDefined();
+    expect(y._object).not.toBeNull();
+
+    expect(p.moveTo(0.5, 0.5)).toBeTruthy();
+    expect(p.valid()).toBeTruthy();
+    expect(x.valid()).toBeTruthy();
+    expect(x._object).toBeDefined();
+    expect(x._object).not.toBeNull();
+    expect(y.valid()).toBeTruthy();
+    expect(y._object).toBeDefined();
+    expect(y._object).not.toBeNull();
+});
+
+test('eq', () => {
+    const p1 = new DGPoint(1, 1);
+    const p2 = new DGPoint(2, 2);
+    expect(p1.eq(p2)).toBeFalsy();
+    p2.moveTo(1, 1);
+    expect(p1.eq(p2)).toBeTruthy();
+    p2.moveTo(2, 2);
+    const l1 = new DGLine(p1, p2);
+    const l2 = new DGLine(p2, p1);
+    expect(l1.eq(l2)).toBeTruthy();
+    const p3 = new DGPoint(-1, -1);
+    const l3 = new DGLine(p1, p3);
+    expect(l1.eq(l3)).toBeTruthy();
+
+    const c1 = new DGCircle(p1, p2);
+    expect(c1.eq(l1)).toBeFalsy();
+    const c2 = new DGCircle(p1, p3);
+    expect(c1.eq(c2)).toBeFalsy();
+    p3.moveTo(2, 2);
+    expect(c1.eq(c2)).toBeTruthy();
+});
+
+test('intersectLL', () => {
+    const p1 = new DGPoint(0, 0);
+    const p2 = new DGPoint(2, 0);
+    const p3 = new DGPoint(1, 1);
+    const p4 = new DGPoint(1, 2);
+    const l1 = new DGLine(p1, p2);
+    const l2 = new DGLine(p3, p4);
+    const p = new DGIntersectLL(l1, l2);
+    expect(p.valid()).toBeTruthy();
+    expect(p.x()).toBe(1);
+    expect(p.y()).toBe(0);
+
+    const p5 = new DGPoint(-1, 1);
+    const l3 = new DGLine(p3, p5);
+    const q = new DGIntersectLL(l1, l3);
+    expect(q.valid()).toBeTruthy();
+    expect(q.isInf()).toBeTruthy();
+});
+
+test('intersectLC', () => {
+    const p1 = new DGPoint(-3, 0);
+    const p2 = new DGPoint(3, 0);
+    const p3 = new DGPoint(0, 0);
+    const p4 = new DGPoint(0, 2);
+    const l = new DGLine(p1, p2);
+    const c = new DGCircle(p3, p4);
+    const ii = new DGIntersectLC(l, c);
+    expect(ii.valid()).toBeTruthy();
+
+    // both intersections
+    const [A, B] = ii.both();
+    expect(A.valid()).toBeTruthy();
+    expect(B.valid()).toBeTruthy();
+    let xx = [A.x(), B.x()];
+    xx.sort();
+    expect(xx[0]).toBe(-2);
+    expect(xx[1]).toBe(2);
+    expect(A.y()).toBe(0);
+    expect(B.y()).toBe(0);
+
+    // any intersection
+    const C = ii.any();
+    expect(C.valid()).toBeTruthy();
+    expect(Math.abs(C.x())).toBe(2);
+    expect(C.y()).toBe(0);
+
+    // select intersection
+    const D = ii.select(p => p.x() > 0);
+    expect(D.valid()).toBeTruthy();
+    expect(D.x()).toBe(2);
+    expect(D.y()).toBe(0);
+
+    // select non-existent
+    const E = ii.select(p => p.y() < -5);
+    expect(E.valid()).toBeFalsy();
+
+    // intersectLC vs intersectCL (class name)
+    const ii1 = new DGIntersectCL(l, c);
+    const C1 = ii1.any();
+    expect(C1.valid()).toBeTruthy();
+    expect(Math.abs(C1.x())).toBe(2);
+    expect(C1.y()).toBe(0);
+    
+    
+    // non-existant intersections
+    p3.moveTo(0, 5);
+    expect(ii.valid()).toBeTruthy();
+    expect(A.valid()).toBeFalsy();
+    expect(B.valid()).toBeFalsy();
+
+    // fictive intersections
+    const jj = new DGIntersectLC(l, c, INCLUDE_FICTIVE);
+    const [A1, B1] = jj.both();
+    expect(jj.valid()).toBeTruthy();
+    expect(A1.valid()).toBeTruthy();
+    expect(B1.valid()).toBeTruthy();
+    expect(A1.x()).toBeCloseTo(0);
+    expect(B1.x()).toBeCloseTo(0);
+    const yy = [A1.y(), B1.y()];
+    yy.sort();
+    expect(yy[0]).toBeCloseTo(-4);
+    expect(yy[1]).toBeCloseTo(4);
+
+});
+
+test('circle center', () => {
+    const O = new DGPoint(0, 0);
+    const A = new DGPoint(1, 0);
+    const c = new DGCircle(O, A);
+    const cc = new DGCircleCenterPoint(c);
+    expect(cc.valid()).toBeTruthy();
+    expect(cc.x()).toBe(0);
+    expect(cc.y()).toBe(0);
+
+    O.moveTo(3, 4);
+    expect(cc.valid()).toBeTruthy();
+    expect(cc.x()).toBe(3);
+    expect(cc.y()).toBe(4);
+});
+
+test('construction', () => {
+    const O = new DGPoint(0, 0);
+    expect(O.constructions()).toStrictEqual([]);
+    const c = new Construction();
+    O.addConstruction(c);
+    expect(O.constructions()).toStrictEqual([c]);
+    O.removeConstruction(c);
+    expect(O.constructions()).toStrictEqual([]);
+});
+
+test('drawMe', () => {
+    const view = new GraphicsView();
+    const p = new DGPoint(3, 4);
+    p.drawMe(view);
+    expect(view.point).toBeCalledTimes(1);
+    expect(view.point).toBeCalledWith(3, 4, {color: 'black', size: 1});
+    p.color("red").size(2);
+    p.drawMe(view);
+    expect(view.point).toBeCalledWith(3, 4, {color: 'red', size: 2});
+    
+    const a = new DGPoint(2, 3);
+    const b = new DGPoint(4, 5);
+    const l = new DGLine(a, b);
+    l.drawMe(view);
+    expect(view.line).toBeCalledTimes(1);
+    const x1 = view.line.mock.calls[0][0];
+    const y1 = view.line.mock.calls[0][1];
+    const x2 = view.line.mock.calls[0][2];
+    const y2 = view.line.mock.calls[0][3];
+    expect(l.onCirclineXY(x1, y1)).toBeTruthy();
+    expect(l.onCirclineXY(x2, y2)).toBeTruthy();
+    expect(view.line.mock.calls[0][4].color).toBe('black');
+    expect(view.line.mock.calls[0][4].width).toBe(1);
+    
+    const c = new DGCircle(a, b);
+    c.drawMe(view);
+    expect(view.circle).toBeCalledTimes(1);
+    expect(view.circle.mock.calls[0][0]).toBe(2);
+    expect(view.circle.mock.calls[0][1]).toBe(3);
+    expect(view.circle.mock.calls[0][2]).toBeCloseTo(Math.sqrt(8));
+    expect(view.circle.mock.calls[0][3].color).toBe('black');
+    expect(view.circle.mock.calls[0][3].width).toBe(1);
+
+    jest.clearAllMocks();
+    a.highlightOn();
+    a.drawMe(view);
+    expect(view.point).toBeCalledTimes(2);
 });

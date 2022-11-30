@@ -70,6 +70,20 @@ class CP1 {
         else
             return null;
     }
+
+    x() {
+        if (!this.is_inf())
+            return this.to_complex().x();
+        else
+            return null;
+    }
+
+    y() {
+        if (!this.is_inf())
+            return this.to_complex().y();
+        else
+            return null;
+    }    
     
     add(other) {
         if (!this.z2.is_zero() || !other.z2.is_zero())
@@ -112,9 +126,15 @@ class CP1 {
     }
 
     eq(other, eps) {
+        if (!other)
+            return false;
+        
         if (!(other instanceof CP1))
             other = other.cp1();
 
+        if (!other)
+            return false;
+        
         this.normalize();
         other.normalize();
         

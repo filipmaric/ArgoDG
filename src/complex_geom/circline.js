@@ -285,7 +285,7 @@ class Circline {
             p = M.inv().moebius_pt(CP1.of_real(x));
             iter++;
         } while (!disc.in_disc(p) && iter < MAX_ITER);
-        return p;
+        return iter < MAX_ITER ? p : null;
     }
 
     // Moebius transformation that maps this circline to x-axis
@@ -355,5 +355,6 @@ class Circline {
 const unit_circle = Circline.unit_circle();
 const x_axis = Circline.x_axis();
 
+const INCLUDE_FICTIVE = true;
 
-export { Circline };
+export { Circline, INCLUDE_FICTIVE };

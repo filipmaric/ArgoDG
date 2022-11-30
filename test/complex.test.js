@@ -217,4 +217,6 @@ test('eq complex numbers', () => {
     expect(new Complex(1e5, 1e5).eq(new Complex(1e5+1, 1e5))).toBeFalsy();
     expect(new Complex(1e5, 1e5).eq(new Complex(1e5+1, 1e5), 1e-5)).toBeTruthy();
     expect(new Complex(1e9, 1e9).eq(new Complex(1e9+1, 1e9+1))).toBeTruthy();
+
+    expect(new Complex(3, 4).eq(undefined)).toBeFalsy();
 });

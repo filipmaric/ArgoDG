@@ -67,6 +67,8 @@ test('cp1 eq', () => {
     expect(inf1.eq(CP1.inf)).toBeTruthy();
 
     expect(inf1.eq(c1)).toBeFalsy();
+
+    expect(c1.eq(undefined)).toBeFalsy();
 });
 
 test('cp1 add', () => {

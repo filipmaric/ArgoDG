@@ -58,3 +58,22 @@ test('inv', () => {
     expect(M.multM(M.inv()).eq(ComplexMatrix2x2.eye())).toBeTruthy();
 });
 
+test('eq', () => {
+    const A = new Complex(1, 2);
+    const B = new Complex(3, 4);
+    const C = new Complex(5, 6);
+    const D = new Complex(7, 8);
+    
+    const M1 = new ComplexMatrix2x2(A, B, C, D);
+    const M2 = new ComplexMatrix2x2(A, B, C, D);
+    expect(M1.eq(M2)).toBeTruthy();
+    
+    const M3 = new ComplexMatrix2x2(A.add(new Complex(1e-10, 0)),
+                                    B.add(new Complex(1e-10, 0)),
+                                    C.add(new Complex(0, 1e-10)),
+                                    D.add(new Complex(0, 1e-10)));
+    expect(M1.eq(M3)).toBeTruthy();
+    
+    const M4 = new ComplexMatrix2x2(B, A, C, D);
+    expect(M1.eq(M4)).toBeFalsy();
+});

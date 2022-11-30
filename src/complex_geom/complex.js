@@ -84,6 +84,8 @@ class Complex {
 
     // check if two numbers are equal (up to the given precision)
     eq(other, eps) {
+        if (other == undefined)
+            return false;
         // default relative error
         if (eps === undefined)
             eps = 1e-8;

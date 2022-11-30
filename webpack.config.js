@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-    mode: 'production',
+    mode: 'development',
     entry: {
         ComplexGeom: './src/complex_geom.js',
         DG: './src/dg.js',

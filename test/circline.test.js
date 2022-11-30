@@ -166,6 +166,10 @@ test('random_point_in_disc()', () => {
         const A = cc.random_point_in_disc(unit_circle);
         expect(cc.on_circline(A) && unit_circle.in_disc(A)).toBeTruthy();
     }
+
+    const out_circle = Circline.mk_circle(new Complex(10, 10), 1);
+    const A = cc.random_point_in_disc(out_circle);
+    expect(A).toBeNull();
 });
 
 test('intersect', () => {

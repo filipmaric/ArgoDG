@@ -43,6 +43,10 @@ class DGObject {
         this._constructions = this._constructions.filter(c => c != construction);
     }
 
+    constructions() {
+        return this._constructions;
+    }
+
     type() {
         return "object";
     }
@@ -325,8 +329,6 @@ class DGObject {
         let result;
         if (this.hasLabel()) {
             result = this.label();
-            if (this.isPoint())
-                console.log(this.x(), this.y());
             if (this.hasDescription())
                 result += ": " + this.description();
             else
@@ -531,8 +533,11 @@ class DGClone extends DGObject {
         return this._object.isCircle();
     }
     
-    get(target, prop) {
-        return this[prop] || this._object[prop].bind(this._object);
+    get(target, prop, receiver) {
+        if (prop in this)
+            return this[prop];
+        else
+            return this._object[prop].bind(this._object);
     }
 }
 
@@ -599,12 +604,12 @@ class DGNum extends DGObject {
 // -----------------------------------------------------------------------------
 // the point is internally represented by a CP1 object
 class DGPoint extends DGObject {
-    constructor(x, y) {
+    constructor(x, y, validity_check) {
         super();
         
-        this._validity_check = undefined;
-        if (arguments.length == 2)
-            this._valid = this.moveTo(x, y);
+        this._validity_check = validity_check;
+        this._coords = CP1.of_xy(x, y);
+        this._valid = !this._validity_check || this._validity_check(this.cp1());
 
         return this;
     }
@@ -650,7 +655,7 @@ class DGPoint extends DGObject {
     // the validity check
     moveTo(x, y, redraw) {
         const cp1 = CP1.of_xy(x, y);
-        if (this._validity_check == undefined || this._validity_check(cp1)) {
+        if (!this._validity_check || this._validity_check(cp1)) {
             // update the internal CP1 object
             this._coords = cp1;
             this._valid = true; 
@@ -667,30 +672,30 @@ class DGPoint extends DGObject {
     }
 
     // theoretically, the point can be infinite
-    is_inf() {
+    isInf() {
         return this._coords.is_inf();
     }
 
     // conversion to complex number (unless infinite)
-    to_complex() {
+    toComplex() {
         return this._coords.to_complex();
     }
 
     // x coordinate (unless infinite)
     x() {
-        const c = this.to_complex();
+        const c = this.toComplex();
         return c.re();
     }
 
     // y coordinate (unless infinite)
     y() {
-        const c = this.to_complex();
+        const c = this.toComplex();
         return c.im();
     }
     
     // both coordinates (unless infinite)
     coords() {
-        return this.to_complex().coords();
+        return this.toComplex().coords();
     }
 
     // internal cp1 representation
@@ -707,7 +712,7 @@ class DGPoint extends DGObject {
         if (other instanceof CP1)
             return this.cp1().eq(other, eps);
         if (other instanceof Complex)
-            return !this.is_inf() && this.to_complex().eq(other, eps);
+            return !this.isInf() && this.toComplex().eq(other, eps);
         if (other.isPoint()) {
             if (!this.valid() || !other.valid())
                 return false;
@@ -718,7 +723,7 @@ class DGPoint extends DGObject {
 
     // distance to the other point (unless one of them is infinite)
     distance(other) {
-        return this.to_complex().sub(other.to_complex()).norm();
+        return this.toComplex().sub(other.toComplex()).norm();
     }
 
     // check if this point is near the given point on the screen
@@ -726,7 +731,7 @@ class DGPoint extends DGObject {
     isNear(x, y, worldToScreen) {
         if (!this.valid())
             return false;
-        const [xt, yt] = worldToScreen(this.x(), this.y());
+        const [xt, yt] = worldToScreen ? worldToScreen(this.x(), this.y()) : [x, y];
         const dist2 = (xt - x)*(xt - x) + (yt - y)*(yt - y);
         let EPS = 5;
         EPS *= this.size();
@@ -735,7 +740,7 @@ class DGPoint extends DGObject {
 
     // drawing the point on the given View
     drawMe(view) {
-        if (!this.is_inf()) {
+        if (!this.isInf()) {
             if (this.isHighlighted()) {
                 view.point(this.x(), this.y(), {color: setOpacity(this.color(), 0.5*this.opacity()), size: 1.5*this.size()});
             }
@@ -746,7 +751,7 @@ class DGPoint extends DGObject {
 
     // drawing the point label on the given View 
     drawLabel(view) {
-        if (!this.is_inf() && this._style._label)
+        if (!this.isInf() && this._style._label)
             view.text(this.x(), this.y(), this._style._label);
     }
 }
@@ -894,12 +899,23 @@ class DGCircline extends DGObject {
     isNear(x, y, worldToScreen) {
         if (!this.valid())
             return false;
+        if (!worldToScreen)
+            worldToScreen = (x, y) => [x, y];
         return this._circline.transform(worldToScreen).on_circline(CP1.of_xy(x, y));
     }
     
     // return internal representation (FIXME: this should be private)
     circline() {
         return this._circline;
+    }
+
+    // check if the given cp1 point is on this circline
+    onCircline(p, eps) {
+        return this._circline.on_circline(p, eps);
+    }
+
+    onCirclineXY(x, y, eps) {
+        return this.onCircline(CP1.of_xy(x, y), eps);
     }
 
     // return the center of the circline
@@ -911,8 +927,22 @@ class DGCircline extends DGObject {
         return this.circline();
     }
 
-    intersect(other, includeFictive) {
-        return this.circline().intersect(other.circline(), includeFictive);
+    // find intersection of two circlines in cp1 (fictive intersections can be included)
+    static intersect(cl1, cl2, includeFictive) {
+        return cl1.circline().intersect(cl2.circline(), includeFictive);
+    }
+    
+    // find intersection of two lines (infinite point if the lines are parallel)
+    static intersectLL(l1, l2) {
+        const p = DGCircline.intersect(l1, l2, false);
+        if (p.length == 0)
+            return CP1.inf;
+        if (!p[0].is_inf())
+            return p[0];
+        if (!p[1].is_inf())
+            return p[1];
+        // both points are infinite (lines are parallel)
+        return CP1.inf;
     }
 }
 
@@ -950,25 +980,18 @@ class DGLine extends DGCircline {
         this._circline = Circline.mk_circline3(this._p1.cp1(), this._p2.cp1(), CP1.inf);
     }
 
-    // find intersection of two lines (infinite point if the lines are parallel)
-    static intersect(l1, l2) {
-        const p = l1.intersect(l2, false);
-        if (p.length == 0)
-            return CP1.inf;
-        if (!p[0].is_inf())
-            return p[0];
-        if (!p[1].is_inf())
-            return p[1];
-        // both points are infinite (lines are parallel)
-        return CP1.inf;
-    }
-
     isLine() {
         return true;
     }
 
-    circline() {
-        return this._circline;
+    // check if the given CP1 object lies on the current line
+    onLine(p, eps) {
+        return this.onCircline(p, eps);
+    }
+
+    // check if the point (x, y) lies on the current line
+    onLineXY(x, y, eps) {
+        return this.onLine(CP1.of_xy(x, y), eps);
     }
 }
 
@@ -998,10 +1021,12 @@ class DGSegment extends DGLine {
     drawLabel(view) {
         // TODO
     }
+
+    // FIXME: isNear
 }
 
 // -----------------------------------------------------------------------------
-// a random point on the line
+// a random point on a  circline
 // -----------------------------------------------------------------------------
 class DGRandomPointOnCircline extends DGPoint {
     constructor(l, params) {
@@ -1042,8 +1067,8 @@ class DGRandomPointOnCircline extends DGPoint {
             else
                 this._coords = this._line.circline().random_point();
             iter++;
-        } while (!this._validity_check(this._coords) && iter < MAX_ITER);
-        if (iter == MAX_ITER) {
+        } while ((this._coords === null || !this._validity_check(this._coords)) && iter < MAX_ITER);
+        if (!this._coords || iter == MAX_ITER) {
             this._valid = false;
         }
     }
@@ -1085,7 +1110,7 @@ class DGCircle extends DGCircline {
         if (!this._valid)
             return;
         this._r = this._c.distance(this._p);
-        this._circline = Circline.mk_circle(this._c.to_complex(), this._r);
+        this._circline = Circline.mk_circle(this._c.toComplex(), this._r);
     }
 
     // check if the given CP1 object lies in the current circle disc (boundary excluded)
@@ -1095,22 +1120,17 @@ class DGCircle extends DGCircline {
 
     // check if the point (x, y) lies in the current circle disc (boundary excluded)
     inDiscXY(x, y) {
-        return this._circline.in_disc(CP1.of_complex(new Complex(x, y)));
+        return this.inDisc(CP1.of_xy(x, y));
+    }
+
+    // check if the given CP1 object lies on the current circle
+    onCircle(p, eps) {
+        return this.onCircline(p, eps);
     }
 
     // check if the point (x, y) lies on the current circle
-    onCircleXY(x, y) {
-        return this._circline.on_circline(CP1.of_complex(new Complex(x, y)), 1e-3);
-    }
-
-    // intersect a line and a circle
-    static intersectLC(l, c, includeFictive) {
-        return l.intersect(c, includeFictive);
-    }
-
-    // intersect two circles
-    static intersectCC(c1, c2, includeFictive) {
-        return c1.intersect(c2, includeFictive);
+    onCircleXY(x, y, eps) {
+        return this.onCircle(CP1.of_xy(x, y), eps);
     }
 }
 
@@ -1245,7 +1265,7 @@ class DGIntersectLL extends DGPoint {
         if (!this._valid)
             return;
 
-        this._coords = DGLine.intersect(this._l1, this._l2);
+        this._coords = DGCircline.intersectLL(this._l1, this._l2);
     }
 }
 
@@ -1316,69 +1336,59 @@ class DGIntersections extends DGObject {
 }
 
 // -----------------------------------------------------------------------------
-// all intersections of a line and a circle
+// all intersections of two circlines
 // -----------------------------------------------------------------------------
-class DGIntersectLC extends DGIntersections {
-    constructor(l, c, includeFictive) {
+class DGIntersect extends DGIntersections {
+    constructor(cl1, cl2, includeFictive) {
         super();
-        this._l = l;
-        this._c = c;
+        this._cl1 = cl1;
+        this._cl2 = cl2;
         this._includeFictive = includeFictive;
         // if the circle or the line changes, the intersection must be updated
-        c.addDependent(this);
-        l.addDependent(this);
+        cl1.addDependent(this);
+        cl2.addDependent(this);
         // initialize the intersection coordinates
         this.recalcMe();
     }
 
     type() {
-        return "intersectLC";
+        return "intersect circlines";
     }
 
     defaultDescription() {
-        return "intersection of " + this._l.label() + " and " + this._c.label();
+        return "intersection of " + this._cl1.label() + " and " + this._cl2.label();
     }
 
     // recalculate the coordinates
     recalcMe() {
-        this._valid = this._l.valid() && this._c.valid();
+        this._valid = this._cl1.valid() && this._cl2.valid();
         if (!this._valid)
             return;
-        this._intersections = DGCircle.intersectLC(this._l, this._c, this._includeFictive);
+        this._intersections = DGCircline.intersect(this._cl1, this._cl2, this._includeFictive);
     }
 }
 
+// -----------------------------------------------------------------------------
+// all intersections of line and circle
+// -----------------------------------------------------------------------------
+class DGIntersectLC extends DGIntersect {
+    constructor(l, c, includeFictive) {
+        super(l, c, includeFictive);
+    }
+}
+
+class DGIntersectCL extends DGIntersect {
+    constructor(c, l, includeFictive) {
+        super(c, l, includeFictive);
+    }
+}
 
 // -----------------------------------------------------------------------------
 // all intersections of two circles
 // -----------------------------------------------------------------------------
-class DGIntersectCC extends DGIntersections {
+class DGIntersectCC extends DGIntersect {
     constructor(c1, c2, includeFictive) {
-        super();
-        this._c1 = c1;
-        this._c2 = c2;
-        this._includeFictive = includeFictive;
-        // if any of the circles changes, the intersection must be updated
-        c1.addDependent(this);
-        c2.addDependent(this);
-        // initialize the intersection coordinates
-        this.recalcMe();
-    }
-
-    type() {
-        return "intersectCC";
-    }
-    
-    defaultDescription() {
-        return "intersection of " + this._c1.label() + " and " + this._c2.label();
-    }
-
-    // recalculate the coordinates
-    recalcMe() {
-        this._valid = this._c1.valid() && this._c2.valid();
-        if (!this._valid)
-            return;
-        this._intersections = DGCircle.intersectCC(this._c1, this._c2, this._includeFictive);
+        super(c1, c2, includeFictive);
     }
 }
 
@@ -1444,28 +1454,30 @@ class DGIf extends DGObject {
         elseObject.addDependent(this);
         dependencies.forEach(o => o.addDependent(this));
         this.recalcMe();
+        return new Proxy(this, this);
     }
 
-    type() {
-        return "if";
+    get(target, prop, receiver) {
+        if (prop in this)
+            return this[prop];
+        else
+            return this._object[prop].bind(this._object);
     }
 
     isPoint() {
-        if (!this._valid)
-            return false;
         return this._object.isPoint();
     }
 
     isLine() {
-        if (!this._valid)
-            return false;
         return this._object.isLine();
     }
-
+    
     isCircle() {
-        if (!this._valid)
-            return false;
-        return this._object.isLine();
+        return this._object.isCircle();
+    }
+
+    type() {
+        return "if";
     }
 
     // both subobjects must be hidden, and DGIf has its own visibility
@@ -1496,60 +1508,29 @@ class DGIf extends DGObject {
         this._elseObject.setStyle(style, redraw);
     }
 
-    fix() {
-        this._object.fix();
-    }
-    
-    unfix() {
-        this._object.unfix();
-    }
-
-    is_inf() {
-        return this._object.is_inf();
-    }
-    
-    to_complex() {
-        return this._object.to_complex();
-    }
-    
-    cp1() {
-        return this._object.cp1();
-    }
-
     funArg() {
         return this._object.funArg();
     }
 
-    x() {
-        return this._object.x();
-    }
-
-    y() {
-        return this._object.y();
+    valid() {
+        return this._valid && this._object.valid();
     }
     
-    coords() {
-        return this._object.coords();
+    isNear(x, y, worldToScreen) {
+        return this._object.isNear(x, y, worldToScreen);
+    }
+    
+    eq(other, eps) {
+        return this._object.eq(other, eps);
     }
 
-    distance(other) {
-        return this._object.distance(other);
+
+    drawMe(view) {
+        this._object.drawMe(view);
     }
 
-    center() {
-        return this._object.center();
-    }
-
-    intersect(l) {
-        return this._object.intersect(l);
-    }
-
-    circline() {
-        return this._object.circline();
-    }
-
-    randomPoint() {
-        return this._object.randomPoint();
+    drawLabel(view) {
+        this._object.drawLabel(view);
     }
 
     recalcMe() {
@@ -1562,29 +1543,6 @@ class DGIf extends DGObject {
         }
         
         this._valid = this._valid && this._object.valid();
-    }
-
-    valid() {
-        return this._valid && this._object.valid();
-    }
-
-    drawMe(view) {
-        this._object.drawMe(view);
-    }
-
-
-    isNear(x, y, worldToScreen) {
-        if (!this._valid)
-            return false;
-        return this._object.isNear(x, y, worldToScreen);
-    }
-    
-    drawLabel(view) {
-        this._object.drawLabel(view);
-    }
-
-    eq(other, eps) {
-        return this._object.eq(other, eps);
     }
 }
 
@@ -1785,5 +1743,35 @@ class DGPoincareHalfPlaneCircle extends DGPoincareHalfPlaneCircleR {
 }
 
 
-export { DGObject, DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGConst, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareDiscLine, DGPoincareDiscCircle, DGPoincareDiscCircleR, DGPoincareHalfPlaneLine, DGPoincareHalfPlaneCircleR, DGPoincareHalfPlaneCircle, REDRAW, NO_REDRAW };
+export {
+    DGObject,
+    DGPoint,
+    DGLine,
+    DGCircle,
+    DGSegment,
+    DGArc,
+    DGRandomPoint,
+    DGRandomPointOnCircline,
+    DGCircleCenterPoint,
+    DGIntersectLL,
+    DGIntersectLC,
+    DGIntersectCL,
+    DGIntersectCC,
+    
+    DGClone,
+    DGIf,
+    DGConst,
+    DGNum,
+    DGPointFun,
+    
+    
+    DGPoincareDiscLine,
+    DGPoincareDiscCircle,
+    DGPoincareDiscCircleR,
+    DGPoincareHalfPlaneLine,
+    DGPoincareHalfPlaneCircleR,
+    DGPoincareHalfPlaneCircle,
+
+    REDRAW, NO_REDRAW
+};
 
