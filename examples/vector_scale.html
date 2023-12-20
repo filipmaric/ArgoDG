@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../dist/DG.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    k: <input id="slider" type="range" min="-5" max="5" value="2" oninput="this.nextElementSibling.value = this.value">
+    <output>1</output>
+    
+    <script>
+      const slider = document.getElementById("slider");
+      
+      DG.setup("mycanvas", { width: 300, height: 300, border: "1px solid #ccc"}, 0, 100, 0, 100);
+
+      const O = DG.point(50, 50).label("O");
+      const A = DG.point(60, 60).label("A");
+      const OA = DG.vector(O, A).color("red").width(3);
+      const k = DG.constant(slider.value);
+      const OB = DG.vectorFun(O, (v1, c) => v1.scale(c), [OA, k]).color("blue");
+      const B = OB.endPoint().label("B");
+
+      slider.addEventListener("input", function() {
+          k.setValue(slider.value);
+      });
+    </script>
+  </body>
+</html>
+

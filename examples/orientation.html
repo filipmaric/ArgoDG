@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../dist/DG.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    <p id='orientation'></p>
+    
+    <script>
+      const p_orientation = document.getElementById('orientation');
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 100, 0, 100);
+
+      function orientation(x1, y1, x2, y2, x, y) {
+          const ax = x - x1;
+          const ay = y - y1;
+          const bx = x - x2;
+          const by = y - y2;
+          return ax*by - ay*bx;
+      }
+
+      class PointListener {
+          moved() {
+              const o = orientation(A.x(), A.y(), B.x(), B.y(), C.x(), C.y());
+              p_orientation.innerHTML = Math.round(o);
+              if (o < 0)
+                  C.color("red");
+              else if (o > 0)
+                  C.color("green");
+              else
+                  C.color("yellow");
+          }
+      }
+
+      const A = DG.point(25, 25).label("A").fix();
+      const B = DG.point(75, 75).label("B").fix();
+      const C = DG.point(50, 30).label("C").color("red");
+      const AB = DG.segment(A, B);
+      const BC = DG.segment(B, C);
+      C.addListener(new PointListener());
+    </script>
+  </body>
+</html>

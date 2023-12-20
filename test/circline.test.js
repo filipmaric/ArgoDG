@@ -71,18 +71,18 @@ test('in_disc', () => {
     const c = Circline.unit_circle();
     expect(c.in_disc(Complex.zero)).toBeTruthy();
     expect(c.in_disc(Complex.one)).toBeFalsy();
-    expect(c.in_disc(Complex.one.sub(new Complex(1e-10, 1e-10)))).toBeTruthy();
+    expect(c.in_disc(Complex.one.sub(new Complex(1e-5, 1e-5)))).toBeTruthy();
     expect(c.in_disc(Complex.one.sub(new Complex(1e-15, 1e-15)))).toBeFalsy();
-    expect(c.in_disc(Complex.of_polar(1.0, Math.PI/3))).toBeFalsy();
-    expect(c.in_disc(Complex.of_polar(1.0 - 1e-8, Math.PI/3))).toBeTruthy();
+    expect(c.in_disc(Complex.of_polar(1.0, Math.PI/3), 1e-10)).toBeFalsy();
+    expect(c.in_disc(Complex.of_polar(1.0 - 1e-8, Math.PI/3), 1e-10)).toBeTruthy();
 
     const l = Circline.x_axis();
     expect(l.in_disc(Complex.zero)).toBeFalsy();
     expect(l.in_disc(Complex.one)).toBeFalsy();
     expect(l.in_disc(Complex.i)).toBeFalsy();
     expect(l.in_disc(Complex.i.uminus())).toBeTruthy();
-    expect(l.in_disc(new Complex(0, -1e-10))).toBeTruthy();
-    expect(l.in_disc(new Complex(0, 1e-10))).toBeFalsy();
+    expect(l.in_disc(new Complex(0, -1e-5))).toBeTruthy();
+    expect(l.in_disc(new Complex(0, 1e-5))).toBeFalsy();
 });
 
 test('same circline', () => {
@@ -101,12 +101,12 @@ test('collinear', () => {
     expect(Circline.collinear(Complex.zero, Complex.i, Complex.one)).toBeFalsy();
     expect(Circline.collinear(new Complex(0, 1), new Complex(1, 3), new Complex(2, 5))).toBeTruthy();
     expect(Circline.collinear(new Complex(0, 1), new Complex(2, 5), new Complex(1, 3))).toBeTruthy();
-    expect(Circline.collinear(new Complex(0, 1), new Complex(1, 3), new Complex(2, 5 + 1e-8))).toBeFalsy();
+    expect(Circline.collinear(new Complex(0, 1), new Complex(1, 3), new Complex(2, 5 + 1e-8), 1e-10)).toBeFalsy();
 });
 
 test('same arc', () => {
     expect(Circline.same_arc(Complex.zero, Complex.one, Complex.i, new Complex(1, 1))).toBeTruthy();
-    expect(Circline.same_arc(Complex.zero, Complex.one, Complex.i, new Complex(1 + 1e-8, 1 + 1e-8))).toBeFalsy();
+    expect(Circline.same_arc(Complex.zero, Complex.one, Complex.i, new Complex(1 + 1e-8, 1 + 1e-8), 1e-10)).toBeFalsy();
     expect(Circline.same_arc(Complex.zero, Complex.one, new Complex(1, 1), Complex.i)).toBeFalsy();
     expect(Circline.same_arc(Complex.zero, Complex.one, Complex.of_real(-2), Complex.of_real(3))).toBeTruthy();
     expect(Circline.same_arc(Complex.zero, Complex.one, Complex.of_real(5), Complex.of_real(6))).toBeFalsy();
@@ -117,7 +117,7 @@ test('other arc', () => {
     expect(Circline.other_arc(Complex.zero, Complex.one, new Complex(1, 1), Complex.i)).toBeTruthy();
     expect(Circline.other_arc(Complex.zero, Complex.one, Complex.of_real(-2), Complex.of_real(3))).toBeFalsy();
     expect(Circline.other_arc(Complex.zero, Complex.one, Complex.of_real(5), Complex.of_real(6))).toBeTruthy();
-    expect(Circline.other_arc(Complex.zero, Complex.one, new Complex(1 + 1e-8, 1 + 1e-8), Complex.i)).toBeFalsy();
+    expect(Circline.other_arc(Complex.zero, Complex.one, new Complex(1 + 1e-8, 1 + 1e-8), Complex.i, 1e-10)).toBeFalsy();
 });
 
 
@@ -129,7 +129,7 @@ test('between', () => {
     expect(Circline.between(Complex.zero, Complex.i, Complex.one)).toBeFalsy();
     expect(Circline.between(new Complex(0, 1), new Complex(1, 3), new Complex(2, 5))).toBeTruthy();
     expect(Circline.between(new Complex(0, 1), new Complex(2, 5), new Complex(1, 3))).toBeFalsy();
-    expect(Circline.between(new Complex(0, 1), new Complex(1, 3), new Complex(2, 5 + 1e-8))).toBeFalsy();
+    expect(Circline.between(new Complex(0, 1), new Complex(1, 3), new Complex(2, 5 + 1e-8), 1e-10)).toBeFalsy();
 });
 
 test('same_side', () => {
@@ -140,7 +140,7 @@ test('same_side', () => {
     expect(Circline.same_side(new Complex(0, 1), new Complex(2, 5), new Complex(1, 3))).toBeFalsy();
     expect(Circline.same_side(Complex.zero, Complex.one, Complex.i)).toBeFalsy();
     expect(Circline.same_side(Complex.zero, Complex.i, Complex.one)).toBeFalsy();
-    expect(Circline.same_side(new Complex(0, 1), new Complex(1, 3+1e-8), new Complex(2, 5))).toBeFalsy();
+    expect(Circline.same_side(new Complex(0, 1), new Complex(1, 3+1e-8), new Complex(2, 5), 1e-10)).toBeFalsy();
 });
 
 test('moebius_to_x_axis', () => {

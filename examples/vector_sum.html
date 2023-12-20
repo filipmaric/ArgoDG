@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../dist/DG.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    
+    <script>
+      DG.setup("mycanvas", { width: 300, height: 300, border: "1px solid #ccc"}, 0, 100, 0, 100);
+
+      const O = DG.point(15, 15).label("O");
+      const A = DG.point(40, 75).label("A");
+      const B = DG.point(50, 30).label("B");
+      const OA = DG.vector(O, A).color("red");
+      const OB = DG.vector(O, B).color("red");
+      const OC = DG.vectorFun(O, (v1, v2) => v1.add(v2), [OA, OB]).color("blue");
+    </script>
+  </body>
+</html>
+

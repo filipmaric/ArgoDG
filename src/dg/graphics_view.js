@@ -1,5 +1,7 @@
 import { View } from './view';
 import { Canvas } from './canvas.js';
+import { textWidth } from './font.js';
+import { removeLaTeX } from './latex.js';
 
 // -----------------------------------------------------------------------------
 // drawing view enables drawing objects given in the world coordinate system
@@ -90,17 +92,32 @@ class GraphicsView extends View {
         options = options || {}
         const size = options.size || 1;
         const [xt, yt] = this.worldToScreen(x, y);
-        this._canvas.circle(xt, yt, 4 * size, options.color, undefined, undefined, true)
+        const r = 4*size;
+        if (r >= 2)
+            this._canvas.circle(xt, yt, 4 * size, "black", undefined, undefined, options.color)
+        else
+            this._canvas.point(xt, yt, "black");
     }
 
-    text(x, y, txt) {
+    vector(x1, y1, x2, y2, options) {
+        options = options || {};
+        const [x1t, y1t] = this.worldToScreen(x1, y1);
+        const [x2t, y2t] = this.worldToScreen(x2, y2);
+        this._canvas.vector(x1t, y1t, x2t, y2t, options.color, options.width, options.dash);
+    }
+
+    text(x, y, txt, font, color, size) {
+        size = size || 0;
         const [xt, yt] = this.worldToScreen(x, y);
-        const displace = 8;
-        this._canvas.latex(xt + displace, yt + displace, txt);
+        const displace = 7 + 3*size;
+        if (xt < this._canvas.width() / 2)
+            this._canvas.text(xt - displace - textWidth(removeLaTeX(txt), font), yt, txt, font, color);
+        else
+            this._canvas.text(xt + displace, yt, txt, font, color);
     }
     
     segment(x1, y1, x2, y2, options) {
-        options = options || {}
+        options = options || {};
         const [x1t, y1t] = this.worldToScreen(x1, y1);
         const [x2t, y2t] = this.worldToScreen(x2, y2);
         this._canvas.segment(x1t, y1t, x2t, y2t, options.color, options.width, options.dash);
@@ -114,12 +131,19 @@ class GraphicsView extends View {
     }
     
     line(x1, y1, x2, y2, options) {
-        options = options || {}
+        options = options || {};
         const [x1t, y1t] = this.worldToScreen(x1, y1);
         const [x2t, y2t] = this.worldToScreen(x2, y2);
         this._canvas.line(x1t, y1t, x2t, y2t, options.color, options.width, options.dash);
     }
 
+    ray(x1, y1, x2, y2, options) {
+        options = options || {};
+        const [x1t, y1t] = this.worldToScreen(x1, y1);
+        const [x2t, y2t] = this.worldToScreen(x2, y2);
+        this._canvas.ray(x1t, y1t, x2t, y2t, options.color, options.width, options.dash);
+    }
+    
     circle(x, y, r, options) {
         options = options || {};
         const [xt, yt] = this.worldToScreen(x, y);
@@ -131,13 +155,18 @@ class GraphicsView extends View {
         options = options || {};
         const [xt, yt] = this.worldToScreen(x, y);
         const rt = r * this._scalex; // FIXME: different scales
-        this._canvas.arc(xt, yt, rt, start_angle, end_angle, counterclockwise, options.color, options.width, options.dash);
+        this._canvas.arc(xt, yt, rt, start_angle, end_angle, counterclockwise, options.color, options.width, options.dash, options.fillColor);
     }
 
-    line_label(x1, y1, x2, y2, color, label) {
+    polygon(points, options) {
+        options = options || {};
+        this._canvas.polygon(points.map(p => this.worldToScreen(p[0], p[1])), options.borderColor, options.width, options.dash, options.fillColor);
+    }
+
+    line_label(x1, y1, x2, y2, label, color) {
         const [x1t, y1t] = this.worldToScreen(x1, y1);
         const [x2t, y2t] = this.worldToScreen(x2, y2);
-        this._canvas.line_label(x1t, y1t, x2t, y2t, color, label);
+        this._canvas.line_label(x1t, y1t, x2t, y2t, label, color);
     }
 
     message(msg) {
@@ -245,6 +274,10 @@ class GraphicsView extends View {
             this._tool.keydown(e,
                                this.worldToScreen.bind(this),
                                this.screenToWorld.bind(this));
+    }
+
+    svgString() {
+        return this._canvas.svgString();
     }
 }
 

@@ -1,5 +1,6 @@
 import { View } from './view.js';
 import * as RC from './rc.js';
+import { Highlighter, Tool } from './tool.js';
 import * as ToolImages from './tool_images.js';
 
 // -----------------------------------------------------------------------------
@@ -73,8 +74,9 @@ class ToolDragFree extends Tool {
                     for (let i = 0; i < ring.length; i++) {
                         const [dx, dy] = ring[i];
                         const [xw, yw] = screenToWorld(x+dx, y+dy);
-                        if (this._dragPoint.moveTo(xw, yw))
+                        if (this._dragPoint.moveTo(xw, yw)) {
                             return;
+                        }
                     }
                 }
             }
@@ -99,23 +101,30 @@ class ToolDragFree extends Tool {
         const p = this._keyboardTarget;
         let [x, y] = [p.x(), p.y()];
         let [xt, yt] = worldToScreen(x, y);
-        const eps = 2;
+        let move = false;
+        const speed = 0.5;
         if (e.key == "ArrowRight") {
             e.preventDefault();
-            xt += 1;
+            xt += speed;
+            move = true;
         }
         else if (e.key == "ArrowLeft") {
             e.preventDefault();
-            xt -= 1;
+            xt -= speed;
+            move = true;
         }
         else if (e.key == "ArrowUp") {
             e.preventDefault();
-            yt -= 1;
+            yt -= speed;
+            move = true;
         }
         else if (e.key == "ArrowDown") {
             e.preventDefault();
-            yt += 1;
+            yt += speed;
+            move = true;
         }
+
+        if (!move) return;
 
         [x, y] = screenToWorld(xt, yt)
         p.moveTo(x, y);

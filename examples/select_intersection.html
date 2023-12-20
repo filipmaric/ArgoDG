@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../dist/DG.js"></script>
+    <script src="../dist/ComplexGeom.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    
+    <script>
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 150, 0, 150);
+
+      const A = DG.point(50, 75).label("A");
+      const B = DG.point(100, 75).label("B");
+      const l = DG.line(A, B).label("l");
+      const C = DG.point(100, 100).label("C");
+      const D = DG.point(100, 50).label("D");
+      const c = DG.circle(C, D);
+      const M = DG.intersectLC_select(l, c, p => DG.between(A, p, B)).label("M").color("red");
+      // const [P, Q] = DG.intersectLC_both(l, c).map(X => X.color("blue"));
+    </script>
+  </body>
+</html>
+    

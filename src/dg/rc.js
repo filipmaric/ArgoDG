@@ -294,6 +294,15 @@ function circle3_center(A, B, C, redraw) {
     return O;
 }
 
+// circumcircle of triangle ABC
+function circle3(A, B, C, redraw) {
+    const ma = bisector(B, C, NO_REDRAW).hide(NO_REDRAW);
+    const mb = bisector(A, C, NO_REDRAW).hide(NO_REDRAW);
+    const O = intersectLL(ma, mb).hide(NO_REDRAW);
+    const c = circle(O, A, redraw);
+    return c;
+}
+
 // point D such that H(A, B, C, D)=-1
 // non-deg: collinear A, B, C and C != A and C != B and C is not midpoint of AB
 function harmonic_conjugate(A, B, C, redraw) {
@@ -498,6 +507,7 @@ export {
     homothety_line,
 
     circle_over_segment,
+    circle3,
     circle3_center,
     touching_circle,
     tangents,

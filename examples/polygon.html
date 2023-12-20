@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../dist/DG.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+
+    <script>
+      function orientation(x1, y1, x2, y2, x3, y3) {
+          function sign(num) {
+              if (num === 0) {
+                  return 0;
+              } else if (num > 0) {
+                  return 1;
+              } else {
+                  return -1;
+              }
+          }
+          
+          return sign((x3 - x1) * (y2 - y1) - (x2 - x1) * (y3 - y1));
+      }
+          
+      
+      function doSegmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+          function isPointOnSegment(x1, y1, x2, y2, px, py) {
+              return px >= Math.min(x1, x2) &&
+                  px <= Math.max(x1, x2) &&
+                  py >= Math.min(y1, y2) &&
+                  py <= Math.max(y1, y2);
+          }
+          
+          // Calculate the orientation of the line segments
+          var ori1 = orientation(x3, y3, x4, y4, x1, y1);
+          var ori2 = orientation(x3, y3, x4, y4, x2, y2);
+          var ori3 = orientation(x1, y1, x2, y2, x3, y3);
+          var ori4 = orientation(x1, y1, x2, y2, x4, y4);
+          
+          // Check if the line segments are intersecting
+          if (ori1 !== ori2 && ori3 !== ori4)
+              return true;
+
+          // Check for collinearity and overlapping segments
+          if ((ori1 === 0 && isPointOnSegment(x3, y3, x4, y4, x1, y1)) ||
+              (ori2 === 0 && isPointOnSegment(x3, y3, x4, y4, x2, y2)) ||
+              (ori3 === 0 && isPointOnSegment(x1, y1, x2, y2, x3, y3)) ||
+              (ori4 === 0 && isPointOnSegment(x1, y1, x2, y2, x4, y4)))
+              return true;
+
+          return false;
+      }
+
+      function isPolygonSimple(points) {
+          const numPoints = points.length;
+
+          for (let i = 0; i + 1 < numPoints; i++) {
+              const p1 = points[i];
+              const p2 = points[i + 1];
+
+              for (let j = i + 2; j < numPoints; j++) {
+                  if (i == 0 && j == numPoints-1) continue;
+                  
+                  const q1 = points[j];
+                  const q2 = points[(j + 1) % numPoints];
+
+                  if (doSegmentsIntersect(p1.x(), p1.y(), p2.x(), p2.y(), q1.x(), q1.y(), q2.x(), q2.y()))
+                      return false; // Found an intersection, the polygon is not simple
+              }
+          }
+
+          return true; // No intersections found, the polygon is simple
+      }
+
+      function isPolygonConvex(points) {
+          const numPoints = points.length;
+          if (numPoints <= 3) return true;
+          const ori = orientation(points[0].x(), points[0].y(), points[1].x(), points[1].y(), points[2].x(), points[2].y());
+          for (let i = 1; i < numPoints; i++) {
+              const p1 = points[i], p2 = points[(i+1) % numPoints], p3 = points[(i+2) % numPoints];
+              if (orientation(p1.x(), p1.y(), p2.x(), p2.y(), p3.x(), p3.y()) != ori)
+                  return false;
+          }
+          return true;
+      }
+      
+      DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 150, 0, 150);
+
+      const font = "25px Arial";
+      const A = DG.point(25, 25).label("A").labelFont(font);
+      const B = DG.point(25, 125).label("B").labelFont(font);
+      const C = DG.point(125, 125).label("C").labelFont(font);
+      const D = DG.point(125, 25).label("D").labelFont(font);
+      const points = [A, B, C, D];
+
+      const poly = DG.polygon(points).color("black").width(5).fillColor("lightblue");
+
+      const simpleChecker = {
+          moved: function(point) {
+              if (isPolygonSimple(points)) {
+                  if (isPolygonConvex(points))
+                      poly.fillColor("lightblue");
+                  else
+                      poly.fillColor("green");
+              }
+              else
+                  poly.fillColor("red");
+          }
+      };
+
+      points.forEach(point => point.addListener(simpleChecker));
+    </script>
+  </body>
+</html>

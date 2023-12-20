@@ -121,7 +121,7 @@ class Circline {
     }
 
     // precision for checking in/on/out
-    static EPS = 1e-10;
+    static EPS = 1e-7;
 
     quad_form(z) {
         if (!(z instanceof CP1))
@@ -204,7 +204,9 @@ class Circline {
     // w1, w2, z are either all CP1 elements, or can be converted to those by means of
     // cp1 method
     static same_side(w1, w2, z, eps) {
-        return Circline.collinear(w1, w2, z, eps) && !Circline.between(w1, z, w2, eps);
+        return Circline.between(z, w1, w2, eps) ||
+               Circline.between(z, w2, w1, eps) ||
+               w1.eq(w2, eps);
     }
 
     // check if w is h-betwen z1 and z2 on the Poincare line joining z1 and z2 within the unit disc

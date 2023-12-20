@@ -1,8 +1,9 @@
-import { DGPoint, DGLine, DGCircle, DGSegment, DGArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGIf, DGPoincareDiscLine, DGPoincareDiscCircle, DGPoincareDiscCircleR, DGPoincareHalfPlaneLine, DGPoincareHalfPlaneCircle, DGPoincareHalfPlaneCircleR, REDRAW, NO_REDRAW } from './objects.js';
-import { GraphicsView } from './graphis_view.js';
+import { DGPoint, DGLine, DGCircle, DGSegment, DGRay, DGArc, DGConvexArc, DGClone, DGRandomPoint, DGRandomPointOnCircline, DGCircleCenterPoint, DGPointFun, DGConst, DGNum, DGIntersectLL, DGIntersectLC, DGIntersectCC, DGText, DGIf, DGPoincareDiscLine, DGPoincareDiscCircle, DGPoincareDiscCircleR, DGPoincareHalfPlaneLine, DGPoincareHalfPlaneCircle, DGPoincareHalfPlaneCircleR, DGVector, DGVectorXY, DGVectorFun, DGPolygon, DGOrientedAngle, DGConvexAngle, Vector2, REDRAW, NO_REDRAW } from './objects.js';
+import { GraphicsView } from './graphics_view.js';
 import { Construction } from './construction.js';
 import { AnimationButtons } from './animation_buttons.js';
-import { ToolDragFree, ConstructionToolbar } from './tool.js';
+import { ToolDragFree, ConstructionToolbar } from './tools.js';
+import { Circline } from '../complex_geom.js';
 
 // -----------------------------------------------------------------------------
 // API and a global register of all DGobjects
@@ -19,7 +20,7 @@ let _animation_buttons = null;
 let _construction_toolbar = null;
 
 export function setup(element, options, xmin, xmax, ymin, ymax) {
-    if (arguments.length == 2)
+   if (arguments.length == 2)
         _global_view = new GraphicsView(element, options);
     else
         _global_view = new GraphicsView(element, options, xmin, xmax, ymin, ymax);
@@ -50,12 +51,33 @@ export function container() {
     return this.view().canvas().container();
 }
 
+export function svg() {
+    return this.view().canvas().svgString();
+}
+
+export function redraw() {
+    _construction.draw();
+}
+
 export function addObject(o, redraw) {
     _construction.addObject(o, redraw);
 }
 
 export function removeObject(o, redraw) {
     _construction.removeObject(o, redraw);
+    o.dispose(redraw);
+}
+
+export function removeAll(redraw) {
+    const objects = [..._construction._objects];
+    _construction.removeAll(redraw);
+    objects.forEach(o => o.dispose(redraw));
+}
+
+export function text(text, x, y, redraw) {
+    const t = new DGText(text, x, y);
+    addObject(t, redraw);
+    return t;
 }
 
 export function point(x, y, redraw, validity_check) {
@@ -90,9 +112,33 @@ export function pointFun(fun, dependent, redraw) {
     return p;
 }
 
-export function line(P1, P2) {
+export function vector(startPoint, arg2, redraw) {
+    const p = new DGVector(startPoint, arg2);
+    addObject(p, redraw);
+    return p;
+}
+
+export function vectorXY(startPoint, x, y, redraw) {
+    const p = new DGVectorXY(startPoint, x, y);
+    addObject(p, redraw);
+    return p;
+}
+
+export function vectorFun(startPoint, fun, dependencies, redraw) {
+    const p = new DGVectorFun(startPoint, fun, dependencies);
+    addObject(p, redraw);
+    return p;
+}
+
+export function line(P1, P2, redraw) {
     const l = new DGLine(P1, P2);
-    addObject(l);
+    addObject(l, redraw);
+    return l;
+}
+
+export function ray(O, A, redraw) {
+    const l = new DGRay(O, A);
+    addObject(l, redraw);
     return l;
 }
 
@@ -132,6 +178,7 @@ export function intersectLC_any(l, c, redraw, includeFictive) {
 export function intersectLC_select(l, c, select_fun, redraw, includeFictive) {
     const i = intersectLC(l, c, redraw, includeFictive);
     const p = i.select(select_fun);
+    p._createdObjects.push(i);
     addObject(p, redraw);
     return p;
 }
@@ -174,6 +221,16 @@ export function If(cond, then_object, else_object, dependencies, redraw) {
     const p = new DGIf(cond, then_object, else_object, dependencies);
     addObject(p, redraw);
     return p;
+}
+
+export function distance(pointA, pointB, redraw) {
+    const n = DG.num((a, b) => {
+        const dx = b.x() - a.x();
+        const dy = b.y() - a.y();
+        return Math.sqrt(dx*dx + dy*dy);
+    }, [pointA, pointB]);
+    addObject(n, redraw);
+    return n;
 }
 
 export function center(c, redraw) {
@@ -224,10 +281,44 @@ export function segment(p1, p2, redraw) {
     return s;
 }
 
+export function midpoint(A, B, redraw) {
+    return DG.pointFun((a, b) => [(a.x() + b.x()) / 2, (a.y() + b.y()) / 2], [A, B], redraw);
+}
+
 export function arc(p1, p, p2, redraw) {
     const a = new DGArc(p1, p, p2);
     addObject(a, redraw);
     return a;
+}
+
+export function convexArc(O, A, B, redraw, convex) {
+    const a = new DGConvexArc(O, A, B, convex);
+    addObject(a, redraw);
+    return a;
+}
+
+export function orientedAngle(A, O, B, r, redraw) {
+    const a = new DGOrientedAngle(A, O, B, r);
+    addObject(a, redraw);
+    return a;
+}
+
+export function convexAngle(A, O, B, r, redraw) {
+    const a = new DGConvexAngle(A, O, B, r);
+    addObject(a, redraw);
+    return a;
+}
+
+export function polygon(points, redraw) {
+    const p = new DGPolygon(points);
+    addObject(p, redraw);
+    return p;
+}
+
+export function constant(value, redraw) {
+    const c = new DGConst(value);
+    addObject(c, redraw);
+    return c;
 }
 
 export function num(fun, dependencies, redraw) {
@@ -282,3 +373,10 @@ export function constructionToolbar(element) {
     if (!_construction_toolbar)
         _construction_toolbar = new ConstructionToolbar(_construction, _view, element);
 }
+
+
+export function between(A, X, B) {
+    return Circline.between(A, X, B);
+}
+
+export { Vector2 };

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>ArgoDG</title>
+    <script src="../dist/DG.js"></script>
+  </head>
+  <body>
+    <div id="mycanvas"></div>
+    
+    <script>
+      DG.setup("mycanvas", { width: 300, height: 300, border: "1px solid #ccc"}, 0, 100, 0, 100);
+
+      function orientation(x1, y1, x2, y2, x, y) {
+          const ax = x - x1;
+          const ay = y - y1;
+          const bx = x - x2;
+          const by = y - y2;
+          return ax*by - ay*bx;
+      }
+
+      class PointListener {
+          moved() {
+              const ABX = orientation(A.x(), A.y(), B.x(), B.y(), X.x(), X.y());
+              const BCX = orientation(B.x(), B.y(), C.x(), C.y(), X.x(), X.y());
+              const CAX = orientation(C.x(), C.y(), A.x(), A.y(), X.x(), X.y());
+              if (ABX == 0 || BCX == 0 || CAX == 0)
+                  X.color("yellow");
+              else if (ABX < 0 && BCX < 0 && CAX < 0) {
+                  X.color("green");
+                  p.fillColor("lightblue");
+              } else {
+                  X.color("red");
+                  p.fillColor("white");
+              }
+          }
+      }
+
+      const A = DG.point(15, 15).label("A").fix();
+      const B = DG.point(85, 85).label("B").fix();
+      const C = DG.point(70, 15).label("C").fix();
+      const X = DG.point(50, 80).color("red");
+      const p = DG.polygon([A, B, C]);
+      X.addListener(new PointListener());
+    </script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-import { normalizeBraces, laTeX2HTML, removeLaTeX, splitSubscript } from '../src/dg/latex.js';
+import { normalizeBraces, laTeX2HTML, removeLaTeX, splitSubSupScript } from '../src/dg/latex.js';
 
 test('normalizeBraces', () => {
     expect(normalizeBraces("A_1")).toBe("A_{1}");
@@ -11,37 +11,41 @@ test('LaTeX2HTML', () => {
     expect(laTeX2HTML("Line M_aM_b")).toBe("Line M<sub>a</sub>M<sub>b</sub>");
 });
 
-test('splitSubscript', () => {
-    let m = splitSubscript("A_1");
+test('splitSubSupScript', () => {
+    let m = splitSubSupScript("A_1");
     expect(m.text).toBe("A");
     expect(m.subscript).toBe("1");
 
-    m = splitSubscript("H_{A}");
+    m = splitSubSupScript("A^1");
+    expect(m.text).toBe("A");
+    expect(m.supscript).toBe("1");
+    
+    m = splitSubSupScript("H_{A}");
     expect(m.text).toBe("H");
     expect(m.subscript).toBe("A");
 
-    m = splitSubscript("M'_{AB}");
+    m = splitSubSupScript("M'_{AB}");
     expect(m.text).toBe("M'");
     expect(m.subscript).toBe("AB");
 
-    m = splitSubscript("A");
+    m = splitSubSupScript("A");
     expect(m.text).toBe("A");
     expect(m.subscript).toBeUndefined();
 
-    m = splitSubscript("Ha'");
+    m = splitSubSupScript("Ha'");
     expect(m.text).toBe("Ha'");
     expect(m.subscript).toBeUndefined();
 
-    m = splitSubscript("A_{B_1}");
+    m = splitSubSupScript("A_{B_1}");
     expect(m.text).toBe("A");
     expect(m.subscript).toBe("B_{1}");
 
-    m = splitSubscript("r_{s_b}(A)");
+    m = splitSubSupScript("r_{s_b}(A)");
     expect(m.text).toBe("r");
     expect(m.subscript).toBe("s_{b}");
     expect(m.rest).toBe("(A)");
 
-    m = splitSubscript("M_aM_b");
+    m = splitSubSupScript("M_aM_b");
     expect(m.text).toBe("M");
     expect(m.subscript).toBe("a");
     expect(m.rest).toBe("M_{b}");

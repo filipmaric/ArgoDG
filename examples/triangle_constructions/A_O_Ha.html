@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <title>A, O, Ha</title>
+    <script src="../../dist/DG.js"></script>
+    <script src="../../dist/RC.js"></script>
+  </head>
+<body>
+  <h1>A, O, Ha</h1>
+  <canvas id="mycanvas"></canvas>
+  <script>
+    DG.setup("mycanvas", { width: 500, height: 500, border: "1px solid #ccc"}, 0, 120, 0, 120);
+
+    const A = RC.point(80, 95).color("blue").label("A").description("Given point - vertex");
+    const O = RC.point(65, 51.14).color("green").label("O").description("Given point - circumcenter");
+    const Ha = RC.point(80, 40).color("red").label("H_a").description("Given point - altitude foot");
+    
+    const ha = RC.line(A, Ha).color("red").label("h_a");
+    const a = RC.drop_perp(ha, Ha).label("a");
+    const cc = RC.circle(O, A).color("green");
+    const [B, C] = RC.intersectLC_both(a, cc);
+    B.color("blue").label("B").description("vertex");
+    C.color("blue").label("C").description("vertex");
+
+    const AB = RC.segment(A, B).color("black").width(2);
+    const BC = RC.segment(B, C).color("black").width(2);
+    const AC = RC.segment(A, C).color("black").width(2);
+
+    DG.animationButtons();
+  </script>
+</body>
+</html>

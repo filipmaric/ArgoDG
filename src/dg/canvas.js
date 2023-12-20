@@ -1,6 +1,37 @@
-import { removeLaTeX, laTeX2HTML, splitSubscript } from './latex.js';
+import { removeLaTeX, laTeX2HTML, splitSubSupScript } from './latex.js';
 import { getOpacity } from './colors.js';
 import { Complex } from '../complex_geom.js';
+import canvas2SVG from "canvas2svg";
+import * as ToolImages from './tool_images.js';
+import { splitFont, reduceFont } from './font.js';
+
+// delegate all object access to given list of objects
+function Delegate(objects) {
+    return new Proxy({}, {
+        get: function(target, property) {
+            if (property in objects[0] && typeof objects[0][property] !== 'function')
+                return objects[0][property];
+            else
+                return function(...args) {
+                    let retVal = undefined;
+                    objects.forEach(obj => {
+                        if (typeof obj[property] === 'function') {
+                            const objRetVal = obj[property].apply(obj, args);
+                            // return the first value
+                            if (retVal === undefined)
+                                retVal = objRetVal;
+                        }
+                    });
+                    return retVal;
+                }
+        },
+        set: function(target, property, value) {
+            objects.forEach(obj => { if (property in obj) obj[property] = value; });
+            return true;
+        }
+    });
+}
+
 
 // -----------------------------------------------------------------------------
 // encapsulate drawing canvas with a few basic drawing primitives
@@ -33,22 +64,29 @@ class Canvas {
 
         const ratio = window.devicePixelRatio;
         
-        if (options.width) {
-            this._canvas.width = options.width * ratio;
-            this._canvas.style.width = options.width + "px";
-        }
+        if (options.width)
+            this.setCanvasWidth(options.width);
 
-        if (options.height) {
-            this._canvas.height = options.height * ratio;
-            this._canvas.style.height = options.height + "px";
-        }
+        if (options.height)
+            this.setCanvasHeight(options.height);
 
-        this._ctx = this._canvas.getContext("2d");
-
-        this._ctx.scale(ratio, ratio);
-        
         if (options.border)
             this._canvas.style.border = options.border;
+
+        // setup canvas drawing context
+        this._canvas_ctx = this._canvas.getContext("2d");
+        this._canvas_ctx.scale(ratio, ratio);
+
+        
+        if (options.saveSVG) {
+            this._saveSVG = true;
+            // drawing simultaneously onto SVG and onto canvas context
+            this._canvas2SVG = new canvas2SVG(this._canvas);
+            this._ctx = Delegate([this._canvas_ctx, this._canvas2SVG]);
+        } else {
+            this._saveSVG = false;
+            this._ctx = this._canvas_ctx;
+        }
 
         this._defaultColor = "black";
         this._defaultWidth = 1;
@@ -59,6 +97,8 @@ class Canvas {
         p.id = "status-line";
         this._p_status = p;
         this._canvas_container = document.createElement("div");
+        this._canvas_container.style.width = this._canvas.style.width;
+        
         this._canvas.parentNode.replaceChild(this._canvas_container, this._canvas);
         this._canvas_container.style.position = "relative";
         this._canvas_container.append(this._canvas);
@@ -68,6 +108,56 @@ class Canvas {
         p.style.left = "0px";
         p.style.margin = "5px";
         p.style.display = "none";
+
+        // add save svg button
+        if (options.saveSVG) {
+            const saveSvgIcon = document.createElement("img");
+            saveSvgIcon.style.border = "1px solid #555";
+            saveSvgIcon.style.borderRadius = "5px";
+            saveSvgIcon.style.opacity = "0.5";
+            saveSvgIcon.style.margin = "1px";
+            saveSvgIcon.src = ToolImages.save_svg;
+            saveSvgIcon.style.position = "absolute";
+            saveSvgIcon.style.top = "0px";
+            saveSvgIcon.style.right = "0px";
+            saveSvgIcon.style.display = "none";
+            this._canvas_container.append(saveSvgIcon);
+            const canvas = this._canvas;
+            canvas.addEventListener('mousemove', function(event) {
+                // Check if mouse pointer is in the top right corner
+                if (event.offsetX >= canvas.clientWidth - 40 && event.offsetY <= 40) {
+                    saveSvgIcon.style.display = 'block';
+                } else {
+                    saveSvgIcon.style.display = 'none';
+                }
+            });
+            saveSvgIcon.addEventListener('mouseout', function() {
+                saveSvgIcon.style.display = 'none';
+            });
+            const self = this;
+            saveSvgIcon.addEventListener('click', function() {
+                // Get the content of the SVG from the canvas
+                var svgContent = self.svg();
+
+                // Create a new Blob object with the SVG content
+                var blob = new Blob([svgContent], { type: 'image/svg+xml' });
+
+                // Create a temporary URL to the Blob object
+                var url = URL.createObjectURL(blob);
+            
+                // Create a new anchor element for the download link
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = 'ArgoDG.svg';
+
+                // Programmatically click the download link
+                link.click();
+
+                // Remove the temporary URL and the anchor element
+                URL.revokeObjectURL(url);
+                link.remove();
+            });
+        }
     }
 
     addElement(e) {
@@ -84,6 +174,32 @@ class Canvas {
 
     addEventListener(event, fun) {
         this._canvas.addEventListener(event, fun);
+    }
+
+    setCanvasWidth(width) {
+        const ratio = window.devicePixelRatio;
+        this._canvas.width = width * ratio;
+        this._canvas.style.width = width + "px";
+    }
+
+    setWidth(width) {
+        this.setCanvasWidth(width);
+        const ratio = window.devicePixelRatio;
+        this._canvas_ctx = this._canvas.getContext("2d");
+        this._canvas_ctx.scale(ratio, ratio);
+    }
+
+    setCanvasHeight(height) {
+        const ratio = window.devicePixelRatio;
+        this._canvas.height = height * ratio;
+        this._canvas.style.height = height + "px";
+    }
+
+    setHeight(height) {
+        this.setCanvasHeight(height);
+        const ratio = window.devicePixelRatio;
+        this._canvas_ctx = this._canvas.getContext("2d");
+        this._canvas_ctx.scale(ratio, ratio);
     }
 
     width() {
@@ -103,9 +219,15 @@ class Canvas {
     clear() {
         const ctx = this.context();
         ctx.clearRect(0, 0, this.width(), this.height());
+        if (this._saveSVG) {
+            this._canvas2SVG = new canvas2SVG(this._canvas);
+            const ratio = window.devicePixelRatio;
+            this._canvas2SVG.scale(ratio, ratio);
+            this._ctx = Delegate([this._canvas_ctx, this._canvas2SVG]);
+        }
     }
 
-    arc(x, y, r, angle_from, angle_to, counterclockwise, color, width, dash, fill) {
+    arc(x, y, r, angle_from, angle_to, counterclockwise, color, width, dash, fillColor) {
         // due to bugs in Firefox and Chrome arc primitive large circles are drawn specially
         if (angle_from == 0 && angle_to == 2 * Math.PI) {
             if (r > 500 * this.width()) {
@@ -130,8 +252,8 @@ class Canvas {
                     const c = new Complex(x, y);
                     const a1 = P1.sub(c).arg();
                     const a2 = P2.sub(c).arg();
-                    this.arc(x, y, r, a1, a2, counterclockwise, color, width, dash, fill);
-                    this.arc(x, y, r, a1, a2, !counterclockwise, color, width, dash, fill);
+                    this.arc(x, y, r, a1, a2, counterclockwise, color, width, dash, fillColor);
+                    this.arc(x, y, r, a1, a2, !counterclockwise, color, width, dash, fillColor);
                     return;
                 }
             }
@@ -140,24 +262,26 @@ class Canvas {
         color = color || this._defaultColor;
         width = width || this._defaultWidth;
         dash = dash || this._defaultDash;
-        if (fill === undefined)
-            fill = false;
         
         const ctx = this.context();
         ctx.lineWidth = width;
         ctx.setLineDash(dash);
-        ctx.beginPath();
-        ctx.arc(x, y, r, angle_from, angle_to, counterclockwise);
-        if (fill) {
-            ctx.fillStyle = color;
+        if (fillColor) {
+            const full = Math.abs(angle_to - angle_from) >= 2*Math.PI;
+            ctx.beginPath();
+            if (!full)
+                ctx.moveTo(x, y);
+            ctx.arc(x, y, r, angle_from, angle_to, counterclockwise);
+            if (!full)
+                ctx.closePath();
+            
+            ctx.fillStyle = fillColor;
             ctx.fill();
-            const o = getOpacity(color)
-            if (!o)
-                ctx.strokeStyle = "black";
-            else
-                ctx.strokeStyle = "rgba(0, 0, 0, " + o + ")";
+            ctx.strokeStyle = color;
             ctx.stroke();
         } else {
+            ctx.beginPath();
+            ctx.arc(x, y, r, angle_from, angle_to, counterclockwise);
             ctx.strokeStyle = color;
             ctx.stroke();
         }
@@ -165,6 +289,14 @@ class Canvas {
     
     circle(x, y, r, color, width, dash, fill) {
         this.arc(x, y, r, 0, 2*Math.PI, true, color, width, dash, fill);
+    }
+
+    point(x, y, color) {
+        const ctx = this.context();
+        ctx.beginPath();
+        ctx.arc(x, y, 1, 0, 2*Math.PI, true);
+        ctx.strokeStyle = color;
+        ctx.stroke();
     }
 
     segment(x1, y1, x2, y2, color, width, dash) {
@@ -179,6 +311,71 @@ class Canvas {
         ctx.strokeStyle = color;
         ctx.setLineDash(dash);
         ctx.stroke();
+    }
+
+    vector(x1, y1, x2, y2, color, width, dash) {
+        color = color || this._defaultColor;
+        width = width || this._defaultWidth;
+        dash = dash || this._defaultDash;
+        const ctx = this.context();
+        
+        var d = Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+        
+        ctx.save();
+        ctx.translate(x1, y1);
+        var alpha = Math.atan2(y2 - y1, x2 - x1);
+        ctx.rotate(alpha);
+
+        var r = 15;
+        var bottomX = 0, bottomY = 0;
+        var topX = d, topY = 0;
+
+        // draw line
+        ctx.beginPath();
+        ctx.lineWidth = width;
+        ctx.strokeStyle = color;
+        ctx.moveTo(bottomX, bottomY);
+        ctx.lineTo(topX, topY);
+        ctx.stroke();
+
+        // draw "arrow"
+        ctx.beginPath();
+        ctx.moveTo(topX - r, topY - 5);
+        ctx.lineTo(topX, topY);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(topX - r, topY + 5);
+        ctx.lineTo(topX, topY);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    polygon(points, borderColor, width, dash, fillColor) {
+        if (points.length == 0)
+            return;
+        const ctx = this.context();
+        ctx.save();
+        borderColor = borderColor || this._defaultColor;
+        width = width || this._defaultWidth;
+        dash = dash || this._defaultDash;
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        for (let i = 1; i < points.length; i++)
+            ctx.lineTo(points[i][0], points[i][1]);
+        ctx.lineTo(points[0][0], points[0][1]);
+        ctx.lineWidth = width;
+        ctx.strokeStyle = borderColor;
+        if (fillColor)
+            ctx.fillStyle = fillColor;
+        else
+            ctx.fillStyle = "rgba(0, 0, 0, 0)";
+        ctx.setLineDash(dash);
+
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
     }
 
     segment_complement(x1, y1, x2, y2, color, width, dash) {
@@ -298,7 +495,30 @@ class Canvas {
         this.segment(x1l, y1l, x2l, y2l, color, width, dash);
     }
 
-    line_label(x1, y1, x2, y2, color, label) {
+    ray(x1, y1, x2, y2, color, width, dash) {
+        const [x1l, y1l, x2l, y2l] = this.line_endpoints(x1, y1, x2, y2);
+        function between1(a, m, b) {
+            return (a <= m && m <= b) || (b <= m && m <= a);
+        }
+        function between(xa, ya, x, y, xb, yb) {
+            return between1(xa, x, xb) && between1(ya, y, yb);
+        }
+        
+        if (!between(x1l, y1l, x1, y1, x2l, y2l)) {
+            if (between(x1, y1, x1l, y1l, x2, y2) ||
+                between(x1, y1, x2l, x2l, x2, y2))
+                this.segment(x1l, y1l, x2l, y2l, color, width, dash);
+            else
+                return;
+        }
+        if (between(x1l, y1l, x2, y2, x1, y1))
+            this.segment(x1, y1, x1l, y1l, color, width, dash);
+        else
+            this.segment(x1, y1, x2l, y2l, color, width, dash);
+    }
+    
+
+    line_label(x1, y1, x2, y2, label, color, font) {
         let [x1l, y1l, x2l, y2l] = this.line_endpoints(x1, y1, x2, y2).map(x => Math.round(x));
         if (y1l > y2l)
             [x1l, y1l] = [x2l, y2l];
@@ -319,60 +539,73 @@ class Canvas {
             x = x1l;
             y = this.height() - offset;
         }
-        this.latex(x + 1, y, label, "15px Arial", color);
+        this.text(x + 1, y, label, "15px Arial", color, font);
     }
 
-    fixRightMargin(x, txt, font) {
-        const ctx = this.context();
-        ctx.font = font;
-        const metrics = ctx.measureText(removeLaTeX(txt));
-        const width = metrics.width;
-        if (x + metrics.width > this.width())
-            x -= (x + metrics.width - this.width());
-        return x;
-    }
-
-    latex(x, y, txt, font, color) {
+    text(x, y, txt, font, color, xAlign, yAlign) {
         font = font || "15px Arial";
-        x = this.fixRightMargin(x, txt, font);
+        color = color || "black";
+        xAlign = xAlign || "left";
+        yAlign = yAlign || "middle";
 
-        function reduceFont(font, df) {
-            const m = font.match(/^(\d+)((\w|\s)+)$/)
-            const size = parseInt(m[1]);
-            return (size-df) + m[2];
-        }
-
-        const m = splitSubscript(txt);
-        if (!m.subscript)
-            return this.text(x, y, txt, font, color);
-        else {
-            const x1 = this.text(x, y, m.text, font, color);
-            const x2 = this.latex(x1, y + 2, m.subscript, reduceFont(font, 2), color);
-            if (!m.rest)
-                return x2;
-            
-            return this.latex(x2, y, m.rest, font, color);
-        }
-    }
-    
-    text(x, y, txt, font, color) {
+        const width = this.width();
+        const height = this.height();
         const ctx = this.context();
-        ctx.font = font || "15px Arial";
-
-        x = this.fixRightMargin(x, txt, ctx.font);
         
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 3;
-        ctx.lineJoin = "miter";
-	ctx.miterLimit = 2;
-        ctx.strokeText(txt, x, y);
-        if (color)
-            ctx.fillStyle = color;
-        ctx.fillText(txt, x, y);
+        function fixMargins(x, y, txt, font) {
+            ctx.font = font;
+            const metrics = ctx.measureText(removeLaTeX(txt));
+            if (x + metrics.width > width)
+                x -= (x + metrics.width - width);
+            if (x < 0)
+                x = 0;
+            return [x, y];
+        }
+        
+        function renderText(x, y, txt, font) {
+            ctx.font = font;
+            ctx.textAlign = xAlign;
+            ctx.textBaseline = yAlign;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = "miter";
+	    ctx.miterLimit = 2;
+            ctx.strokeText(txt, x, y);
+            if (color)
+                ctx.fillStyle = color;
+            ctx.fillText(txt, x, y);
 
-        const metrics = ctx.measureText(txt);
-        const width = metrics.width;
-        return x + width;
+            const metrics = ctx.measureText(txt);
+            const width = metrics.width;
+            return x + width;
+        }
+
+        function latex(x, y, txt, font) {
+            const m = splitSubSupScript(txt);
+            
+            if (m.subscript || m.supscript) {
+                let script, dy;
+                if (m.supscript) {
+                    script = m.supscript;
+                    dy = -2;
+                } else if (m.subscript) {
+                    script = m.subscript;
+                    dy = 2;
+                }
+                
+                const x1 = renderText(x, y, m.text, font);
+                const x2 = latex(x1, y + dy, script, reduceFont(font));
+                if (!m.rest)
+                    return x2;
+                    
+                return latex(x2, y, m.rest, font);
+            } else {
+                return renderText(x, y, txt, font);
+            }
+        }
+
+        [x, y] = fixMargins(x, y, txt, font);
+        latex(x, y, txt, font);
     }
 
     message(msg) {
@@ -389,6 +622,11 @@ class Canvas {
             this._p_status.innerHTML += "<br/>";
         this._p_status.innerHTML += laTeX2HTML(msg);
     }
+
+    svg() {
+        return this._canvas2SVG.getSerializedSvg();
+    }
 }
+
 
 export { Canvas };

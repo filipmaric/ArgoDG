@@ -10,7 +10,7 @@ const NO_REDRAW = false;
 class DGObject {
     // global number of created objects
     static num_objects = 0;
-    
+
     constructor(construction) {
         // unique object identifier
         this._ID = DGObject.num_objects++;
@@ -33,6 +33,21 @@ class DGObject {
         this._constructions = [];
         if (construction)
             this.addConstruction(construction);
+
+        this._listeners = [];
+
+        // all auxiliary objects that are created by this object's
+        // constructor should be put into this list so that they are
+        // automatically "destructed"
+        this._createdObjects = [];
+        // true if the object is disposed (should be considered "dead")
+        this._disposed = false;
+    }
+
+    // remove internally created objects (sort of like a destructor)
+    dispose(redraw) {
+        this._disposed = true;
+        this._createdObjects.forEach(o => DG.removeObject(o, redraw));
     }
 
     addConstruction(construction) {
@@ -45,6 +60,11 @@ class DGObject {
 
     constructions() {
         return this._constructions;
+    }
+
+    addListener(listener) {
+        this._listeners.push(listener);
+        return this;
     }
 
     type() {
@@ -157,6 +177,27 @@ class DGObject {
         return this;
     }
 
+    // get or set the fill color of the object
+    getFillColor() {
+        // return color that has been set or undefined otherwise
+        return this.getProperty("_fillColor", "");
+    }
+
+    setFillColor(c, redraw) {
+        this.setProperty("_fillColor", c, redraw);
+    }
+
+    fillColor(c, redraw) {
+        // if c is undefined get the color
+        if (c === undefined)
+            return this.getFillColor();
+
+        // otherwise set the color
+        this.setFillColor(c, redraw);        
+        return this;
+    }
+    
+
     // get or set opacity of the object
     getOpacity() {
         return getOpacity(this.color());
@@ -164,6 +205,8 @@ class DGObject {
 
     setOpacity(o, redraw) {
         this.color(setOpacity(this.color(), o), redraw);
+        if (this.fillColor())
+            this.fillColor(setOpacity(this.fillColor(), o), redraw);
     }
 
     opacity(o, redraw) {
@@ -260,6 +303,26 @@ class DGObject {
         
         // otherwise set the label
         this.setLabel(str, redraw);
+        return this;
+    }
+
+
+    // get/set the label font of the object
+    getLabelFont() {
+        return this.getProperty("_label_font", undefined);
+    }
+    
+    setLabelFont(font, readraw) {
+        this.setProperty("_label_font", font, readraw);
+    }
+
+    labelFont(font, redraw) {
+        // font is undefined get the font
+        if (font === undefined)
+            return this.getLabelFont();
+
+        // otherwise set the font
+        this.setLabelFont(font, redraw);
         return this;
     }
 
@@ -388,6 +451,11 @@ class DGObject {
         this._dependent_objects.push(o);
     }
 
+    // return dependent objects that are not disposed
+    dependentNotDisposed() {
+        return this._dependent_objects.filter(obj => !obj._disposed);
+    }
+
     // Recaculate the position of all dependent objects when this object changes
     // this is a template method that handles the order of
     // recalculations, while the coordinate calculations happen within
@@ -430,10 +498,10 @@ class DGObject {
         }
 
         objects[this._ID] = this;
-        this._dependent_objects.forEach(enqueue);
+        this.dependentNotDisposed().forEach(enqueue);
         while (!queue.empty()) {
             const obj = queue.shift();
-            obj._dependent_objects.forEach(enqueue);
+            obj.dependentNotDisposed().forEach(enqueue);
         }
 
         // next the Kahn's algoritm is performed
@@ -442,7 +510,7 @@ class DGObject {
         while (!queue.empty()) {
             const id = queue.shift();
             objects[id].recalcMe();
-            objects[id]._dependent_objects.forEach(obj => {
+            objects[id].dependentNotDisposed().forEach(obj => {
                 if (--degree[obj._ID] == 0)
                     queue.push(obj._ID);
             });
@@ -481,6 +549,7 @@ class DGObject {
     clone() {
         return new DGClone(this);
     }
+
 }
 
 // -----------------------------------------------------------------------------
@@ -536,8 +605,12 @@ class DGClone extends DGObject {
     get(target, prop, receiver) {
         if (prop in this)
             return this[prop];
-        else
-            return this._object[prop].bind(this._object);
+        else {
+            if (typeof this._object[prop] == "function")
+                return this._object[prop].bind(this._object);
+            else
+                return this._object[prop];
+        }
     }
 }
 
@@ -595,9 +668,62 @@ class DGNum extends DGObject {
         const args = this._dependencies.map(obj => obj.funArg());
         this._value = this._fun(...args);
         this._valid = isFinite(this._value);
+
+        this._listeners.forEach(listener => {
+            if (typeof listener == "function")
+                listener(this);
+            else
+                listener.changed(this);
+        });
     }
 }
 
+
+// -----------------------------------------------------------------------------
+// Text
+// -----------------------------------------------------------------------------
+class DGText extends DGObject {
+    constructor(text, x, y) {
+        super();
+        this._text = text;
+        this._coords = [x, y];
+    }
+
+    x() {
+        return this._coords[0];
+    }
+
+    y() {
+        return this._coords[1];
+    }
+
+    setText(text, redraw) {
+        this._text = text;
+        if (redraw == undefined || redraw)
+            this.fireChangeEvent();
+    }
+
+    moveTo(x, y, redraw) {
+        this._coords = [x, y];
+        this._listeners.forEach(listener => {
+            if (typeof listener == "function")
+                listener(this);
+            else
+                listener.moved(this);
+        });
+
+        if (redraw == undefined || redraw)
+            this.fireChangeEvent();
+
+        // the point was successfully moved
+        return true;
+    }
+    
+    // drawing the point on the given View
+    drawMe(view) {
+        view.text(this.x(), this.y(), this._text, this._style._label_font, this._style._label_color);
+    }
+}
 
 // -----------------------------------------------------------------------------
 // free point
@@ -662,8 +788,16 @@ class DGPoint extends DGObject {
             // update all dependent objects
             this.recalc();
 
+            this._listeners.forEach(listener => {
+                if (typeof listener == "function")
+                    listener(this);
+                else
+                    listener.moved(this);
+            });
+
             if (redraw == undefined || redraw)
                 this.fireChangeEvent();
+
             // the point was successfully moved
             return true;
         }
@@ -745,14 +879,53 @@ class DGPoint extends DGObject {
                 view.point(this.x(), this.y(), {color: setOpacity(this.color(), 0.5*this.opacity()), size: 1.5*this.size()});
             }
             view.point(this.x(), this.y(), {color: this.color(), size: this.size()});
-            
         }
     }
 
     // drawing the point label on the given View 
     drawLabel(view) {
         if (!this.isInf() && this._style._label)
-            view.text(this.x(), this.y(), this._style._label);
+            view.text(this.x(), this.y(), this._style._label, this._style._label_font, this._style._label_color, this.size());
+    }
+
+    translate(vector) {
+        return DG.pointFun((p, v) => [p.x() + v.x(), p.y() + v.y()], [this, vector]);
+    }
+
+    rot(O, alpha, redraw) {
+        return DG.pointFun((p, o) => {
+            // Calculate the cosine and sine of the angle
+            const cosAlpha = Math.cos(alpha);
+            const sinAlpha = Math.sin(alpha);
+
+            // Translate the point to the origin (subtract the rotation center coordinates)
+            const translatedX = p.x() - o.x();
+            const translatedY = p.y() - o.y();
+
+            // Apply the rotation transformation
+            const rotatedX = translatedX * cosAlpha - translatedY * sinAlpha;
+            const rotatedY = translatedX * sinAlpha + translatedY * cosAlpha;
+
+            // Translate the point back to its original position (add the rotation center coordinates)
+            const finalX = rotatedX + o.x();
+            const finalY = rotatedY + o.y();
+
+            // Return the rotated coordinates
+            return [finalX, finalY];
+        }, [this, O], redraw);
+    }
+
+    // projection of this point to the given line
+    projectOn(l, redraw) {
+        const A = l.point1();
+        const B = l.point2();
+        const ab = DG.vector(A, B, NO_REDRAW).hide(NO_REDRAW);
+        const v = DG.vector(A, this, NO_REDRAW).hide(NO_REDRAW); 
+        const P = DG.pointFun((O, v1, v2) => {
+            const proj = v1.projectOn(v2);
+            return [O.x() + proj.x(), O.y() + proj.y()];
+        }, [A, v, ab], redraw);
+        return P;
     }
 }
 
@@ -766,7 +939,6 @@ class DGPointFun extends DGPoint {
         super();
         this._fun = fun;
         this._dependencies = dependencies;
-        
         dependencies.forEach(obj => {
             obj.addDependent(this);
         });
@@ -803,10 +975,10 @@ class DGRandomPoint extends DGPoint {
     constructor(validity_check, xmin, xmax, ymin, ymax) {
         super();
         
-        xmin = xmin || -1;
-        xmax = xmax || 1;
-        ymin = ymin || -1;
-        ymax = ymax || 1;
+        xmin = (xmin === undefined) ? -1 : xmin;
+        xmax = (xmax === undefined) ? 1 : xmax;
+        ymin = (ymin === undefined) ? -1 : ymin;
+        ymax = (ymax === undefined) ? 1 : ymax;
         this._xmin = xmin; this._xmax = xmax;
         this._ymin = ymin; this._ymax = ymax;
         this._validity_check = validity_check ? validity_check : (p => true);
@@ -836,6 +1008,181 @@ class DGRandomPoint extends DGPoint {
             this._valid = false;
         } else
             this._valid = true;
+    }
+}
+
+
+class Vector2 {
+    constructor(x, y) {
+        this._x = x;
+        this._y = y;
+    }
+
+    static ofPoint(p) {
+        return new Vector2(p.x(), p.y());
+    }
+
+    static ofPoints(p1, p2) {
+        return new Vector2(p2.x() - p1.x(), p2.y() - p1.y());
+    }
+
+    x() {
+        return this._x;
+    }
+
+    y() {
+        return this._y;
+    }
+
+    opposite() {
+        return new Vector2(-this.x(), -this.y());
+    }
+    
+    add(v) {
+        return new Vector2(this.x() + v.x(), this.y() + v.y());
+    }
+
+    subtract(v) {
+        return this.add(v.opposite());
+    }
+
+    scale(c) {
+        return new Vector2(this.x() * c, this.y() * c);
+    }
+
+    scalProd(v) {
+        return this.x()*v.x() + this.y()*v.y();
+    }
+
+    norm() {
+        return Math.sqrt(this.scalProd(this));
+    }
+
+
+    vecProd(v) {
+        return this.x()*v.y() - this.y()*v.x();
+    }
+
+    projectOn(v) {
+        const dp = this.scalProd(v);
+        const vNormSq = v.scalProd(v);
+        if (vNormSq == 0)
+            return new Vector2(0, 0);
+        return new Vector2(v.x() * (dp / vNormSq), v.y() * (dp / vNormSq));
+        
+    }
+}
+
+// vector between two given points
+class DGVector extends DGObject {
+    constructor(startPoint, endPoint) {
+        super();
+        this._start = startPoint;
+        this._end = endPoint;
+        this._start.addDependent(this);
+        this._end.addDependent(this);
+    }
+
+    startPoint() {
+        return this._start;
+    }
+
+    endPoint() {
+        return this._end;
+    }
+    
+    vector() {
+        return new Vector2(this._end.x() - this._start.x(),
+                           this._end.y() - this._start.y());
+    }
+
+    x() {
+        return this._end.x() - this._start.x();
+    }
+
+    y() {
+        return this._end.y() - this._start.y();
+    }
+
+    valid() {
+        return this._start.valid() && this._end.valid();
+    }
+
+    norm() {
+        return Math.sqrt(this.x() * this.x() + this.y() * this.y());
+    }
+
+    unit(redraw) {
+        return DG.vectorFun(this.startPoint(), (s, e, v) => {
+            const norm = v.norm();
+            if (norm == 0)
+                return [0, 0];
+            return [(e.x() - s.x()) / norm,
+                    (e.y() - s.y()) / norm];
+        }, [this.startPoint(), this.endPoint(), this], redraw);
+    }
+
+    scale(k, redraw) {
+        if (k instanceof DGNum)
+            return DG.vectorFun(this.startPoint(),
+                                (k, s, e, v) => [k*(e.x() - s.x()), k*(e.y() - s.y())],
+                                [k, this.startPoint(), this.endPoint(), this], redraw);
+        else
+            return DG.vectorFun(this.startPoint(),
+                                (s, e, v) => [k*(e.x() - s.x()), k*(e.y() - s.y())],
+                                [this.startPoint(), this.endPoint(), this], redraw);
+    }
+
+    scalProd(v) {
+        return DG.num((v1, v2) => v1.scalProd(v2), [this, v]);
+    }
+
+    vecProd(v) {
+        return DG.num((v1, v2) => v1.vecProd(v2), [this, v]);
+    }
+
+    drawMe(view) {
+        view.vector(this._start.x(), this._start.y(),
+                    this._end.x(), this._end.y(),
+                    {color: this.color(), size: this.size(), width: this.width()});
+    }
+
+    funArg() {
+        return this.vector();
+    }
+}
+
+// vector of fixed length and movable starting point
+class DGVectorXY extends DGVector {
+    constructor(startPoint, x, y) {
+        const endPoint = DG.pointFun(p => [p.x() + x, p.y() + y], [startPoint]).hide();
+        super(startPoint, endPoint);
+        this._createdObjects.push(endPoint);
+    }
+}
+
+
+class DGVectorFun extends DGVector {
+    constructor(startPoint, fun, dependencies) {
+        const endPoint = DG.pointFun(() => {
+            const args = dependencies.map(obj => obj.funArg());
+            const c = fun(...args);
+            if (c instanceof Vector2)
+                return [startPoint.x() + c.x(), startPoint.y() + c.y()];
+            else if (Array.isArray(c))
+                return [startPoint.x() + c[0], startPoint.y() + c[1]];
+            else {
+                const v = new Vector2(c);
+                return [startPoint.x() + v.x(), startPoint.y() + v.y()];
+            }
+        }, dependencies, NO_REDRAW).hide(NO_REDRAW);
+        super(startPoint, endPoint);
+        
+        dependencies.forEach(obj => {
+            obj.addDependent(this);
+        });
+        this.recalcMe();
+        this._createdObjects.push(endPoint);
     }
 }
 
@@ -890,7 +1237,7 @@ class DGCircline extends DGObject {
             const [p1, p2] = this._circline.line_points();
             const [x1, y1] = p1.coords();
             const [x2, y2] = p2.coords();
-            view.line_label(x1, y1, x2, y2, this.color(), this.label());
+            view.line_label(x1, y1, x2, y2, this.label(), this.color());
         }
     }
 
@@ -964,6 +1311,14 @@ class DGLine extends DGCircline {
         this.recalcMe();
     }
 
+    point1() {
+        return this._p1;
+    }
+
+    point2() {
+        return this._p2;
+    }
+    
     type() {
         return "line";
     }
@@ -996,13 +1351,62 @@ class DGLine extends DGCircline {
 }
 
 // -----------------------------------------------------------------------------
+// straight half-line between two given points
+// -----------------------------------------------------------------------------
+// internally the line is represented by a CP1 circline (a Hermitean matrix)
+class DGRay extends DGLine {
+    constructor(O, A) {
+        super(O, A);
+    }
+    type() {
+        return "line";
+    }
+
+    defaultDescription() {
+        return "half-line " + this._p1.label() + this._p2.label();
+    }
+
+    isLine() {
+        return true;
+    }
+
+    // check if the given CP1 object lies on the current line
+    onLine(p, eps) {
+        return Circline.same_side(p, this._p2, this._p1, eps);
+    }
+    
+    // check if the point (x, y) lies on the current line
+    onLineXY(x, y, eps) {
+        return this.onLine(CP1.of_xy(x, y), eps);
+    }
+
+    drawMe(view) {
+        const [x1, y1] = this._p1.coords();
+        const [x2, y2] = this._p2.coords();
+        view.ray(x1, y1, x2, y2, {color: this._style._color, width: this._style._width, dash: this._style._dash});
+    }
+}
+
+// -----------------------------------------------------------------------------
 // a line segment
 // -----------------------------------------------------------------------------
 class DGSegment extends DGLine {
     constructor(p1, p2) {
         super(p1, p2);
+        // should the first point be included in the segment
+        this._include1 = false;
+        // should the second point be included in the segment
+        this._include2 = false;
     }
 
+    include1(include) {
+        this._include1 = include;
+    }
+
+    include2(include) {
+        this._include2 = include;
+    }
+    
     type() {
         return "segment";
     }
@@ -1022,6 +1426,18 @@ class DGSegment extends DGLine {
         // TODO
     }
 
+    // check if the given CP1 object lies on the current segment
+    onLine(p, eps) {
+        return Circline.between(this._p2, p, this._p1, eps) ||
+               (this._include1 && this._p1.eq(p, eps)) ||
+               (this._include2 && this._p2.eq(p, eps));
+    }
+    
+    // check if the point (x, y) lies on the current line
+    onLineXY(x, y, eps) {
+        return this.onLine(CP1.of_xy(x, y), eps);
+    }
+    
     // FIXME: isNear
 }
 
@@ -1155,7 +1571,8 @@ class DGArc extends DGCircline {
     }
     
     recalcMe() {
-        this._valid = this._p1.valid() && this._p.valid() && this._p2.valid();
+        this._valid = this._p1.valid() && this._p.valid() && this._p2.valid() &&
+                      !this._p1.eq(this._p) && !this._p2.eq(this._p) && !this._p1.eq(this._p2);
         if (!this._valid)
             return;
         this._circline = Circline.mk_circline3(this._p1, this._p, this._p2);
@@ -1189,9 +1606,128 @@ class DGArc extends DGCircline {
                 view.arc(x, y, r, a1, a2, canonAngle(a2 - a1) < canonAngle(a - a1), style);
             }
         }
-        doDraw(this, {color: this.color(), width: this.width(), dash: this.dash()});
+        doDraw(this, {color: this.color(), width: this.width(), dash: this.dash(), fillColor: this.fillColor()});
     }
 }
+
+
+// -----------------------------------------------------------------------------
+// convex arc given its center and two points (center O should lie on the
+// bisector of AB)
+// -----------------------------------------------------------------------------
+class DGConvexArc extends DGArc {
+    constructor(O, A, B, convex) {
+        if (convex === undefined) convex = true;
+        const createdObjects = [];
+        const M = DG.midpoint(A, B, DG.NO_REDRAW).hide(DG.NO_REDRAW);
+        createdObjects.push(M);
+        const c = DG.circle(O, A, DG.NO_REDRAW).hide(DG.NO_REDRAW);
+        createdObjects.push(c);
+        const l = DG.line(O, M, DG.NO_REDRAW).hide(DG.NO_REDRAW);
+        createdObjects.push(l);
+        const X = DG.intersectLC_select(l, circ, x => DG.between(O, M, x) == convex, DG.NO_REDRAW).hide(DG.NO_REDRAW);
+        createdObjects.push(X);
+        super(A, X, B);
+        this._createdObjects = createdObjects;              
+    }
+}
+
+
+// -----------------------------------------------------------------------------
+// oriented angle (in positive direction, from OA towards OB
+// -----------------------------------------------------------------------------
+
+class DGOrientedAngle extends DGArc {
+    constructor(A, O, B, r) {
+        const createdObjects = [];
+        const OA = DG.vector(O, A, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(OA);
+        const Ap1 = OA.unit(NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(Ap1);
+        const Ap1s = Ap1.scale(r, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(Ap1s);
+        const Ap = Ap1s.endPoint();
+        
+        const OB = DG.vector(O, B, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(OB);
+        const Bp1 = OB.unit(NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(Bp1);
+        const Bp1s = Bp1.scale(r, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(Bp1s);
+        const Bp = Bp1s.endPoint();
+        
+        const OC = DG.vectorFun(O, (v1, v2) => v1.add(v2), [OA, OB], NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(OC);
+        const mOC = OC.scale(-1, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(mOC);
+
+        const pCp1 = OC.unit(NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(pCp1);
+        const pCp1s = pCp1.scale(r, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(pCp1s);
+        const pCp = pCp1s.endPoint();
+        createdObjects.push(pCp);
+
+        const mCp1 = mOC.unit(NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(mCp1);
+        const mCp1s = mCp1.scale(r, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(mCp1s);
+        const mCp = mCp1s.endPoint();
+        createdObjects.push(mCp);
+        
+        const Ar = A.rot(O, Math.PI/2, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(Ar);
+        const OAr = DG.vector(O, Ar, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(OAr);
+        const rCp1 = OAr.unit(NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(rCp1);
+        const rCp1s = rCp1.scale(r, NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(rCp1s);
+        const rCp = rCp1s.endPoint();
+        createdObjects.push(rCp);
+
+        const vp = DG.num((oa, ob) => oa.vecProd(ob), [OA, OB], NO_REDRAW);
+        createdObjects.push(vp);
+        const sp = DG.num((oa, ob) => oa.scalProd(ob), [OA, OB], NO_REDRAW);
+        createdObjects.push(sp);
+        
+        const Cp = DG.pointFun((vp, sp, pcp, mcp, rcp) => {
+            if (Math.abs(vp) / (OA.norm() * OB.norm()) < 0.5 && sp < 0) {
+                return rcp;
+            } else if (vp > 0) {
+                return pcp;
+            } else {
+                return mcp;
+            }
+        }, [vp, sp, pCp, mCp, rCp], NO_REDRAW).hide(NO_REDRAW);
+        createdObjects.push(Cp);
+
+        super(Ap, Cp, Bp);
+        this._createdObjects = createdObjects;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// convex angle between OA and OB
+// -----------------------------------------------------------------------------
+
+class DGConvexAngle extends DGArc {
+    constructor(A, O, B, r) {
+        const OA = DG.vector(O, A, NO_REDRAW).hide(NO_REDRAW);
+        const OB = DG.vector(O, B, NO_REDRAW).hide(NO_REDRAW);
+        const Ap = OA.unit(NO_REDRAW).hide(NO_REDRAW).scale(r).hide(NO_REDRAW).endPoint();
+        const Bp = OB.unit(NO_REDRAW).hide(NO_REDRAW).scale(r).hide(NO_REDRAW).endPoint();
+        
+        const OC = DG.vectorFun(O, (v1, v2) => v1.add(v2), [OA, OB], NO_REDRAW).hide(NO_REDRAW);
+        const Cp = OC.unit(NO_REDRAW).hide(NO_REDRAW).scale(r, NO_REDRAW).hide(NO_REDRAW).endPoint();
+
+        const vp = DG.num((oa, ob) => oa.vecProd(ob), [OA, OB], NO_REDRAW);
+        const sp = DG.num((oa, ob) => oa.scalProd(ob), [OA, OB], NO_REDRAW);
+
+        super(Ap, Cp, Bp)
+    }
+}
+
 
 // -----------------------------------------------------------------------------
 // center of the given circle
@@ -1266,6 +1802,7 @@ class DGIntersectLL extends DGPoint {
             return;
 
         this._coords = DGCircline.intersectLL(this._l1, this._l2);
+        this._valid = this._l1.onLine(this._coords) && this._l2.onLine(this._coords) ;
     }
 }
 
@@ -1439,6 +1976,35 @@ class DGIntersectPoint extends DGPoint {
 }
 
 // -----------------------------------------------------------------------------
+// Polygon
+// -----------------------------------------------------------------------------
+class DGPolygon extends DGObject {
+    constructor(points) {
+        super();
+        this._points = points;
+        this._points.forEach(p => p.addDependent(this));
+        this.recalcMe();
+    }
+
+    // draw
+    drawMe(view) {
+        view.polygon(this._points.map(p => [p.x(), p.y()]),
+                     {borderColor: this.color(),
+                      width: this.width(),
+                      dash: this.dash(),
+                      fillColor: this.fillColor()});
+    }
+
+    point(i) {
+        return this._points[i];
+    }
+
+    // recalculate
+    recalcMe() {
+    }
+}
+
+// -----------------------------------------------------------------------------
 // condition
 // -----------------------------------------------------------------------------
 
@@ -1454,14 +2020,19 @@ class DGIf extends DGObject {
         elseObject.addDependent(this);
         dependencies.forEach(o => o.addDependent(this));
         this.recalcMe();
-        return new Proxy(this, this);
+        this._proxy = new Proxy(this, this);
+        return this._proxy;
     }
 
     get(target, prop, receiver) {
         if (prop in this)
             return this[prop];
-        else
-            return this._object[prop].bind(this._object);
+        else {
+            if (typeof this._object[prop] == "function")
+                return this._object[prop].bind(this._proxy);
+            else
+                return this._object[prop];
+        }
     }
 
     isPoint() {
@@ -1749,7 +2320,11 @@ export {
     DGLine,
     DGCircle,
     DGSegment,
+    DGRay,
     DGArc,
+    DGConvexArc,
+    DGPolygon,
+    DGText,
     DGRandomPoint,
     DGRandomPointOnCircline,
     DGCircleCenterPoint,
@@ -1757,6 +2332,11 @@ export {
     DGIntersectLC,
     DGIntersectCL,
     DGIntersectCC,
+    DGVector,
+    DGVectorXY,
+    DGVectorFun,
+    DGOrientedAngle,
+    DGConvexAngle,
     
     DGClone,
     DGIf,
@@ -1772,6 +2352,7 @@ export {
     DGPoincareHalfPlaneCircleR,
     DGPoincareHalfPlaneCircle,
 
+    Vector2,
     REDRAW, NO_REDRAW
 };
 

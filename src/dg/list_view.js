@@ -56,3 +56,5 @@ class ListView extends View {
         this._element.innerHTML = "";
     }
 }
+
+export { ListView };

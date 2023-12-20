@@ -41,3 +41,5 @@ class Tool {
         return undefined;
     }
 }
+
+export { Highlighter, Tool };

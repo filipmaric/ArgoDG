@@ -41,6 +41,17 @@ class Construction {
             this.draw();
     }
 
+    removeAll(redraw) {
+        this._objects.forEach(o => {
+            if (o) {
+                o.removeConstruction(this);
+            }
+        });
+        this._objects = [];
+        if (redraw == undefined || redraw)
+            this.draw();
+    }
+
     forEach(fun) {
         this._objects.forEach(fun);
     }

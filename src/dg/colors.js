@@ -1,5 +1,12 @@
 const ctx = document.createElement("canvas").getContext("2d");
 
+// input: r,g,b in [0,1], out: h in [0,360) and s,v in [0,1]
+export function rgb2hsv(r, g, b) {
+    let v=Math.max(r,g,b), c=v-Math.min(r,g,b);
+    let h= c && ((v==r) ? (g-b)/c : ((v==g) ? 2+(b-r)/c : 4+(r-g)/c)); 
+    return [60*(h<0?h+6:h), v&&c/v, v];
+}
+
 // read RGB from rgb or rgba string
 export function parseRGB(str) {
     const m = str.match(/^rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(,\s*(\d+([.]\d*)?))?\s*\)$/i);
@@ -9,7 +16,6 @@ export function parseRGB(str) {
         b: parseFloat(m[3])
     } : null;
 }
-
 
 // convert color in any format to rgb
 export function rgbColor(str){
@@ -28,6 +34,12 @@ export function rgbColor(str){
         return hexToRGB(color);
     else
         return parseRGB(color);
+}
+
+export function hsvColor(str) {
+    const rgb = rgbColor(str);
+    const hsv = rgb2hsv(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+    return {h: hsv[0], s: hsv[1], v: hsv[2]};
 }
 
 // extract opacity from color string

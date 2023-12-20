@@ -308,6 +308,8 @@ function triangle(A, B, C) {
 
 export {
     absolute,
+    unit_circle,
+    in_disc,
     
     point, free,
 
@@ -339,5 +341,4 @@ export {
     
     
     triangle,
-    
 };
